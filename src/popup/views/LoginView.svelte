@@ -1,0 +1,103 @@
+<script lang="ts">
+    import { authStore } from "$lib/stores/auth";
+    import { BookOpen } from "@lucide/svelte";
+
+    interface Props {
+        onLoginSuccess: () => void;
+    }
+
+    let { onLoginSuccess }: Props = $props();
+
+    let email = $state("");
+    let password = $state("");
+    let isLoading = $state(false);
+    let error = $state("");
+
+    async function handleLogin() {
+        if (!email || !password) {
+            error = "Please enter email and password";
+            return;
+        }
+
+        isLoading = true;
+        error = "";
+
+        try {
+            const success = await authStore.login(email, password);
+            if (success) {
+                onLoginSuccess();
+            } else {
+                error = "Invalid credentials";
+            }
+        } catch (err) {
+            error = "Login failed. Please try again.";
+        } finally {
+            isLoading = false;
+        }
+    }
+</script>
+
+<div class="flex flex-col items-center justify-center h-full p-1">
+    <div class="w-full max-w-sm space-y-6">
+        <form
+            onsubmit={(e) => {
+                e.preventDefault();
+                handleLogin();
+            }}
+            class="space-y-4"
+        >
+            <div class="space-y-2">
+                <label for="email" class="text-sm font-medium">Email</label>
+                <input
+                    id="email"
+                    type="email"
+                    bind:value={email}
+                    placeholder="you@example.com"
+                    class="w-full px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+                    disabled={isLoading}
+                />
+            </div>
+
+            <div class="space-y-2">
+                <label for="password" class="text-sm font-medium"
+                    >Password</label
+                >
+                <input
+                    id="password"
+                    type="password"
+                    bind:value={password}
+                    placeholder="*************"
+                    class="w-full px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+                    disabled={isLoading}
+                />
+            </div>
+
+            {#if error}
+                <p class="text-sm text-destructive text-center">{error}</p>
+            {/if}
+
+            <button
+                type="submit"
+                disabled={isLoading}
+                class="w-full px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            >
+                {#if isLoading}
+                    <div class="flex items-center justify-center h-full">
+                        <div
+                            class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"
+                        ></div>
+                    </div>
+                {:else}
+                    Login
+                {/if}
+            </button>
+        </form>
+
+        <p class="text-xs text-center text-muted-foreground">
+            Don't have an account? <a
+                href="https://highlighter.com/signup"
+                class="text-primary hover:underline">Sign up</a
+            >
+        </p>
+    </div>
+</div>

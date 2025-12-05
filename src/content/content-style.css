@@ -1,0 +1,11 @@
+#highlight-overlay-container {
+    all: initial;
+    font-family:
+        system-ui,
+        -apple-system,
+        sans-serif;
+}
+
+#highlight-overlay-container * {
+    box-sizing: border-box;
+}
