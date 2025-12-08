@@ -21,7 +21,7 @@
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
 
     let currentView: "login" | "onboarding" | "syncing" | "dashboard" =
-        $state("login");
+        $state("dashboard");
     let isLoading = $state(false);
     let showAccount = $state(false);
     let loggedIn = $derived($authStore.isAuthenticated);
@@ -71,17 +71,23 @@
             <div></div>
         </div>
     {:else}
-        <div
-            class="grid grid-cols-5 justify-between align-middle items-center py-4 px-1"
-        >
-            <div class="col-span-4 bg-card h-24 shadow-lg curve"></div>
+        <div class="flex items-center justify-between py-4 px-1 gap-x-5">
+            <div class="bg-card h-24 shadow-lg curve flex-1"></div>
             <DropdownMenu.Root>
                 <DropdownMenu.Trigger>
                     {#snippet child({ props })}
-                        <EllipsisVertical {...props} class="size-5" />
+                        <button
+                            class="icons flex items-center"
+                            aria-label="Menu"
+                        >
+                            <EllipsisVertical {...props} class="size-6" />
+                        </button>
                     {/snippet}
                 </DropdownMenu.Trigger>
-                <DropdownMenu.Content class="w-48 text-sm" align="start">
+                <DropdownMenu.Content
+                    class="w-48 text-sm font-extension"
+                    align="start"
+                >
                     <DropdownMenu.Item onclick={() => console.log("hello")}>
                         <span>What's new</span>
                     </DropdownMenu.Item>

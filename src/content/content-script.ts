@@ -1,7 +1,5 @@
 import Overlay from "./Overlay.svelte";
 import { mount } from "svelte";
-import type { SavedWord } from "$lib/types"; // Assuming you have this for types
-
 let overlayComponent: Overlay | null = null;
 let overlayContainer: HTMLDivElement | null = null;
 let selectedText = "";

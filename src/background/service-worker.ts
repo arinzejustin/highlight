@@ -468,4 +468,4 @@ addEventListener("online", () => {
 // Start tasks immediately when script loads
 scheduleTasks();
 
-export {};
+export { };
