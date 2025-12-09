@@ -21,13 +21,13 @@
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
 
     let currentView: "login" | "onboarding" | "syncing" | "dashboard" =
-        $state("dashboard");
+        $state("syncing");
     let isLoading = $state(false);
     let showAccount = $state(false);
     let allowList = $state(false);
     let loggedIn = $derived($authStore.isAuthenticated);
     let user = $derived($authStore.user);
-    let unsyncLength = $state(0);
+    let unsyncedCount = $derived($wordsStore.filter((w) => !w.synced).length);
 
     const triggerSync = () => {
         currentView = loggedIn ? "syncing" : "login";
@@ -48,8 +48,6 @@
         // }
 
         isLoading = false;
-
-        unsyncLength = (await wordsStore.unsyncLength()) || 0;
     });
 
     function handleLoginSuccess() {
@@ -214,12 +212,12 @@
                             onclick={() => triggerSync()}
                             class="icons relative"
                         >
-                            <!-- {#if unsyncLength > 0 } -->
-                            <span
-                                class="absolute -top-2.5 -right-3.5 z-1000 rounded-full p-1 px-2 bg-destructive text-white text-xs"
-                                >{unsyncLength}</span
-                            >
-                            <!-- {/if} -->
+                            {#if unsyncedCount > 0}
+                                <span
+                                    class="absolute -top-2.5 -right-3.5 z-1000 rounded-full p-1 px-2 bg-destructive text-white text-xs"
+                                    >{unsyncedCount}</span
+                                >
+                            {/if}
                             <RefreshCcw class="size-4" />
                         </button>
                     </Tooltip.Trigger>

@@ -2,7 +2,7 @@
     import { onMount } from "svelte";
     import { wordsStore } from "$lib/stores/words";
     import { authStore } from "$lib/stores/auth";
-    import { RefreshCw, Settings, LogOut, BookMarked } from "@lucide/svelte";
+    import { RefreshCw, Settings, LogOut } from "@lucide/svelte";
 
     interface Props {
         onOpenOptions: () => void;
@@ -49,35 +49,12 @@
 </script>
 
 <div class="flex flex-col h-full">
-    <div class="border-b border-border p-4">
-        <div class="flex items-center justify-between">
-            <h1 class="text-lg font-semibold flex items-center gap-2">
-                <BookMarked class="w-5 h-5 text-primary" />
-                Word Saver
-            </h1>
-            <div class="flex gap-2">
-                <button
-                    onclick={onOpenOptions}
-                    class="p-2 hover:bg-accent rounded-md transition-colors"
-                    title="Settings"
-                >
-                    <Settings class="w-4 h-4" />
-                </button>
-                <button
-                    onclick={handleLogout}
-                    class="p-2 hover:bg-accent rounded-md transition-colors"
-                    title="Logout"
-                >
-                    <LogOut class="w-4 h-4" />
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <div class="flex-1 p-6 space-y-6">
-        <div class="space-y-4">
-            <div class="p-4 bg-card border border-border rounded-lg space-y-2">
-                <div class="flex items-center justify-between">
+    <div class="flex-1 py-6 space-y-6">
+        <div
+            class="flex gap-x-4 flex-row justify-between items-center align-middle"
+        >
+            <div class="p-4 w-full bg-card border rounded-lg space-y-2">
+                <div class="flex flex-col-reverse items-center justify-between">
                     <span class="text-sm text-muted-foreground"
                         >Total Words</span
                     >
@@ -85,21 +62,20 @@
                 </div>
             </div>
 
-            <div class="p-4 bg-card border border-border rounded-lg space-y-2">
-                <div class="flex items-center justify-between">
+            <div class="p-4 w-full bg-card border rounded-lg space-y-2">
+                <div class="flex flex-col-reverse items-center justify-between">
                     <span class="text-sm text-muted-foreground">Unsynced</span>
                     <span class="text-2xl font-bold text-primary"
                         >{unsyncedCount}</span
                     >
                 </div>
             </div>
-
-            {#if lastSyncTime}
-                <p class="text-xs text-center text-muted-foreground">
-                    Last synced at {lastSyncTime}
-                </p>
-            {/if}
         </div>
+        {#if lastSyncTime}
+            <p class="text-xs text-center text-muted-foreground">
+                Last synced at {lastSyncTime}
+            </p>
+        {/if}
 
         <button
             onclick={handleSync}
