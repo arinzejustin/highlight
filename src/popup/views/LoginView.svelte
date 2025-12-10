@@ -92,10 +92,9 @@
                 {/if}
             </button>
         </form>
-
         <p class="text-xs text-center text-muted-foreground">
             Don't have an account? <a
-                href="https://highlighter.com/signup"
+                href="https://highlighter.com/signup" target="_blank"
                 class="text-primary hover:underline">Sign up</a
             >
         </p>

@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount } from "svelte";
-    import { ListFilterPlus, OctagonAlert } from "@lucide/svelte";
+    import { ListFilterPlus, OctagonAlert, Info } from "@lucide/svelte";
     import { activationStore } from "$lib/stores/activation";
     import * as Tooltip from "$lib/components/ui/tooltip/index.js";
     import type { User } from "$lib/types";
@@ -21,9 +21,18 @@
         openList?: () => void;
     }>();
     let hostname = $state("");
+    let totalRequests = $state(1247);
+    let successfulRequests = $state(1189);
+    let failedRequests = $state(58);
 
-    // let isActivated = $derived($activationStore.isActivated);
-    let isActivated = $state(false);
+    let successRate = $derived(
+        ((successfulRequests / totalRequests) * 100).toFixed(1),
+    );
+    let failureRate = $derived(
+        ((failedRequests / totalRequests) * 100).toFixed(1),
+    );
+
+    let isActivated = $derived($activationStore.isActivated);
 
     const getNextResetDay = () => {
         if (!user?.createdAt) return "—";
@@ -56,8 +65,7 @@
     };
 
     const handleExtensionActivation = () => {
-        // activationStore.toggle();
-        isActivated = !isActivated;
+        activationStore.toggle();
     };
 
     onMount(() => {
@@ -216,17 +224,138 @@
             </div>
             <div class="my-4 pt-3">
                 <div
-                    class="grid grid-cols-3 gap-x-4 items-center align-middle justify-between"
+                    class="grid grid-cols-3 gap-x-4 items-stretch align-middle justify-between"
                 >
+                    <!-- Total Usage -->
                     <div
-                        class="border rounded-lg min-h-24 p-2 card cursor-pointer hover:shadow-md transition-all duration-700"
-                    ></div>
+                        class="border rounded-lg min-h-24 p-4 card cursor-pointer hover:shadow-md transition-all duration-700"
+                    >
+                        <div class="flex flex-col h-full justify-between">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="icons">
+                                    <svg
+                                        class="w-5 h-5 text-blue-600"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M13 10V3L4 14h7v7l9-11h-7z"
+                                        />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="text-2xl font-bold text-primary">
+                                    {totalRequests.toLocaleString()}
+                                </p>
+                                <p class="text-sm text-gray-400 mt-1">
+                                    Requests
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Successful Requests -->
                     <div
-                        class="border rounded-lg min-h-24 p-2 card cursor-pointer hover:shadow-md transition-all duration-700"
-                    ></div>
+                        class="border rounded-lg min-h-24 p-4 card cursor-pointer hover:shadow-md transition-all duration-700"
+                    >
+                        <div class="flex flex-col h-full justify-between">
+                            <div
+                                class="flex items-center justify-between mb-2 mr-1"
+                            >
+                                <div class="icons mr-1">
+                                    <svg
+                                        class="w-5 h-5 text-green-600"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                        />
+                                    </svg>
+                                </div>
+                                <span
+                                    class="text-xs shadow-sm font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full"
+                                >
+                                    {successRate}%
+                                </span>
+                            </div>
+                            <div>
+                                <p class="text-2xl font-bold text-primary">
+                                    {successfulRequests.toLocaleString()}
+                                </p>
+                                <p class="text-sm text-gray-400 mt-1">
+                                    Successful
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Failed Requests -->
                     <div
-                        class="border rounded-lg min-h-24 p-2 card cursor-pointer hover:shadow-md transition-all duration-700"
-                    ></div>
+                        class="border rounded-lg min-h-24 p-4 card cursor-pointer hover:shadow-md transition-all duration-700"
+                    >
+                        <div class="flex flex-col h-full justify-between">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="icons mr-1">
+                                    <svg
+                                        class="w-5 h-5 text-red-600"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                        />
+                                    </svg>
+                                </div>
+                                <span
+                                    class="text-xs shadow-sm font-semibold text-red-600 bg-red-50 px-2 py-1 rounded-full"
+                                >
+                                    {failureRate}%
+                                </span>
+                            </div>
+                            <div>
+                                <p class="text-2xl font-bold text-primary">
+                                    {failedRequests.toLocaleString()}
+                                </p>
+                                <div
+                                    class="flex justify-start items-center gap-x-1"
+                                >
+                                    <p
+                                        class="text-sm text-gray-400 mt-1 mr-0.5"
+                                    >
+                                        Failed
+                                    </p>
+                                    <Tooltip.Provider>
+                                        <Tooltip.Root>
+                                            <Tooltip.Trigger>
+                                                <Info class="size-4" />
+                                            </Tooltip.Trigger>
+                                            <Tooltip.Content>
+                                                <p>
+                                                    This does not include
+                                                    requests that failed due to
+                                                    network related issues.
+                                                </p>
+                                            </Tooltip.Content>
+                                        </Tooltip.Root>
+                                    </Tooltip.Provider>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

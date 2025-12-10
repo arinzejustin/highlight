@@ -21,7 +21,7 @@
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
 
     let currentView: "login" | "onboarding" | "syncing" | "dashboard" =
-        $state("syncing");
+        $state("dashboard");
     let isLoading = $state(false);
     let showAccount = $state(false);
     let allowList = $state(false);
