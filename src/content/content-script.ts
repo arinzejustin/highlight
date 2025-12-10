@@ -1,9 +1,11 @@
 import Overlay from "./Overlay.svelte";
-import { mount } from "svelte";
-let overlayComponent: Overlay | null = null;
+import { mount, unmount } from "svelte";
+
+let overlayComponent: ReturnType<typeof mount> | null = null;
 let overlayContainer: HTMLDivElement | null = null;
 let selectedText = "";
 let selectionRect: DOMRect | null = null;
+let scrollTimeout: number | null = null;
 
 function createOverlayContainer(): HTMLDivElement {
   const container = document.createElement("div");
@@ -12,7 +14,7 @@ function createOverlayContainer(): HTMLDivElement {
     position: absolute;
     top: 0;
     left: 0;
-    z-index: 2147483647909090;
+    z-index: 2147483647;
     pointer-events: none;
   `;
   document.body.appendChild(container);
@@ -38,8 +40,8 @@ function showOverlay(word: string, rect: DOMRect) {
 }
 
 function hideOverlay() {
-  if (overlayComponent) {
-    // overlayComponent.$destroy();
+  if (overlayComponent && overlayContainer) {
+    unmount(overlayComponent);
     overlayComponent = null;
   }
 }
@@ -62,7 +64,6 @@ function handleTextSelection() {
 
   let word = words[0];
 
-  // Remove surrounding punctuation but keep internal (e.g. "don't" → keep apostrophe)
   const cleanWord = word.replace(/^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$/g, "");
   const letterCount = (cleanWord.match(/[a-zA-Z0-9]/g) || []).length;
 
@@ -71,7 +72,6 @@ function handleTextSelection() {
     return;
   }
 
-  // Use original word (with punctuation) for display, but clean for logic
   const range = selection.getRangeAt(0);
   const rect = range.getBoundingClientRect();
 
@@ -89,6 +89,7 @@ function handleTextSelection() {
 }
 
 document.addEventListener("mouseup", handleTextSelection);
+
 document.addEventListener("selectionchange", () => {
   const selection = window.getSelection();
   if (selection && selection.isCollapsed) {
@@ -99,7 +100,6 @@ document.addEventListener("selectionchange", () => {
 document.addEventListener("mousedown", (e) => {
   const target = e.target as HTMLElement;
   if (!target.closest("#highlight-overlay-container")) {
-    // Fixed ID match
     const selection = window.getSelection();
     if (selection && !selection.isCollapsed) {
       return;
@@ -109,9 +109,36 @@ document.addEventListener("mousedown", (e) => {
 });
 
 window.addEventListener("scroll", () => {
-  if (overlayComponent && selectionRect) {
-    hideOverlay();
+  if (overlayComponent && selectionRect && selectedText) {
+    if (scrollTimeout) return;
+
+    scrollTimeout = window.setTimeout(() => {
+      scrollTimeout = null;
+
+      const selection = window.getSelection();
+      if (selection && !selection.isCollapsed) {
+        const range = selection.getRangeAt(0);
+        const newRect = range.getBoundingClientRect();
+
+        if (overlayComponent) {
+          overlayComponent.$set?.({
+            x: newRect.left + window.scrollX,
+            y: newRect.top + window.scrollY - 10,
+          });
+        }
+        selectionRect = newRect;
+      } else {
+        hideOverlay();
+      }
+    }, 16);
+  }
+}, { passive: true });
+
+window.addEventListener("beforeunload", () => {
+  hideOverlay();
+  if (overlayContainer && overlayContainer.parentNode) {
+    overlayContainer.parentNode.removeChild(overlayContainer);
   }
 });
 
-console.log("Word Saver content script loaded");
+console.log("[Highlight Extension]: Content script loaded");

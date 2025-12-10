@@ -273,8 +273,8 @@
             class:text-red-900={isVerified === false}
         >
             {isVerified
-                ? "✓ Verification successful!"
-                : "✗ Verification failed. Try again."}
+                ? "Verification successful!"
+                : "Verification failed. Try again."}
         </div>
     {/if}
 </div>

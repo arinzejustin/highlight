@@ -14,7 +14,7 @@
     let password = $state("");
     let isLoading = $state(false);
     let error = $state("");
-    let securityCheck = $state(true);
+    let securityCheck = $state(false);
     let result = $state(null) as {
         token: string;
         userId: string;
@@ -120,12 +120,12 @@
                 <button
                     type="submit"
                     disabled={isLoading}
-                    class="w-full px-3 py-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                    class="w-full cursor-pointer px-3 py-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed font-medium"
                 >
                     {#if isLoading}
                         <div class="flex items-center justify-center h-full">
                             <div
-                                class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"
+                                class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-foreground"
                             ></div>
                         </div>
                     {:else}
