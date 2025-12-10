@@ -11,6 +11,7 @@ export interface SavedWord {
 
 export interface AuthData {
   authToken: string | null;
+  deviceId?: string;
   userId: string | null;
   user: User | null;
 }

@@ -30,14 +30,41 @@ function createActivationStore() {
   async function init() {
     try {
       const data = await getChromeStorage<StorageData>(["user"]);
-      const isActivated = data.user?.extensionMode ?? false;
-      set({ isActivated });
-      console.info("[Hightlight ActivationStore] Initialized with state:", isActivated);
+
+      const isFirstRun =
+        !data.user || typeof data.user.extensionMode !== "boolean";
+
+      if (isFirstRun) {
+        const user: Partial<User> = {
+          ...(data.user || {}),
+          extensionMode: true,
+        };
+
+        await setChromeStorage({ user });
+        set({ isActivated: true });
+
+        await chromeBroadcast({
+          type: BROADCAST_EVENTS.ACTIVATED,
+          isActivated: true,
+        });
+
+        Notification(NOTIFICATION_MESSAGES.ACTIVATED);
+
+        console.info("[Highlight Extension] First run detected — auto activated");
+        return;
+      }
+
+      set({ isActivated: data.user?.extensionMode! });
+      console.info(
+        "[Highlight Extension] Initialized with state:",
+        data.user?.extensionMode
+      );
     } catch (error) {
-      console.error("[Hightlight ActivationStore] Failed to initialize:", error);
+      console.error("[Highlight Extension] Init failed:", error);
       set({ isActivated: false });
     }
   }
+
 
   async function setActivation(isActivated: boolean) {
     if (current === isActivated) return;
@@ -58,9 +85,9 @@ function createActivationStore() {
         isActivated ? NOTIFICATION_MESSAGES.ACTIVATED : NOTIFICATION_MESSAGES.DEACTIVATED
       );
 
-      console.info(`[ActivationStore] Extension ${isActivated ? "activated" : "deactivated"}`);
+      console.info(`[Highlight Extension] Extension ${isActivated ? "activated" : "deactivated"}`);
     } catch (error) {
-      console.error("[ActivationStore] Failed to update state:", error);
+      console.error("[Highlight Extension] Failed to update state:", error);
       throw error;
     }
   }
@@ -75,5 +102,5 @@ function createActivationStore() {
 export const activationStore = createActivationStore();
 
 activationStore.init().catch((e) => {
-  console.error("[ActivationStore] Critical init failure:", e);
+  console.error("[Highlight Extension] Critical init failure:", e);
 });

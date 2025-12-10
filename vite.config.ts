@@ -8,7 +8,7 @@ export default defineConfig({
   plugins: [
     svelte({
       compilerOptions: {
-        css: 'injected'
+        // css: isDev ? 'injected' : undefined,
       }
     })
   ],
@@ -20,8 +20,8 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: true,
-    // Disable minification for easier debugging (optional)
     minify: isDev ? false : "esbuild",
+    sourcemap: isDev ? 'inline' : false,
     rollupOptions: {
       input: {
         popup: resolve(__dirname, "src/popup/index.html"),
@@ -37,17 +37,16 @@ export default defineConfig({
           if (chunkInfo.name === "service-worker") {
             return "background/service-worker.js";
           }
-          return "[name].js";
+          return "assets/[name].js";
         },
-        chunkFileNames: "chunks/[name]-[hash].js",
+        chunkFileNames: "assets/chunks/[name]-[hash].js",
         assetFileNames: (assetInfo) => {
-          if (assetInfo.name?.endsWith('.css')) {
-            return "content/[name][extname]";
+          const name = assetInfo.name || '';
+          if (name.endsWith('.css')) {
+            return "assets/[name][extname]";
           }
           return "assets/[name]-[hash][extname]";
         },
-        format: 'iife',
-        manualChunks: undefined,
       },
     },
   },

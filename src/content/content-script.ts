@@ -1,11 +1,33 @@
 import Overlay from "./Overlay.svelte";
 import { mount, unmount } from "svelte";
+import { getChromeStorage } from "$lib/utils/chromeWrap";
+import type { User } from "$lib/types";
 
 let overlayComponent: ReturnType<typeof mount> | null = null;
 let overlayContainer: HTMLDivElement | null = null;
 let selectedText = "";
 let selectionRect: DOMRect | null = null;
-let scrollTimeout: number | null = null;
+let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+let user: User | null = null;
+
+async function loadUserData() {
+  try {
+    const authData = await getChromeStorage<{ user?: User }>(["user"]);
+    user = authData.user || null;
+  } catch (error) {
+    console.error("[Highlight Extension] Failed to load user data:", error);
+    user = null;
+  }
+}
+
+chrome.runtime.onMessage.addListener((message) => {
+  if (message.type === "USER_UPDATED") {
+    user = message.user || null;
+  }
+});
+
+loadUserData();
 
 function createOverlayContainer(): HTMLDivElement {
   const container = document.createElement("div");
@@ -47,27 +69,37 @@ function hideOverlay() {
 }
 
 function handleTextSelection() {
-  const selection = window.getSelection();
-  if (!selection || selection.isCollapsed) {
+  if (user?.extensionMode === false) {
     hideOverlay();
     return;
   }
 
-  const text = selection.toString().trim();
-  if (!text) return;
+  if (user?.allowedList?.length) {
+    const hostname = window.location.hostname;
+    const isAllowed = user.allowedList.some((domain: string) =>
+      hostname === domain || hostname.endsWith(`.${domain}`)
+    );
+    if (!isAllowed) {
+      hideOverlay();
+      return;
+    }
+  }
 
-  const words = text.split(/\s+/).filter(Boolean);
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed || !selection.toString().trim()) {
+    hideOverlay();
+    return;
+  }
+
+  const words = selection.toString().trim().split(/\s+/).filter(Boolean);
   if (words.length !== 1) {
     hideOverlay();
     return;
   }
 
-  let word = words[0];
-
+  const word = words[0];
   const cleanWord = word.replace(/^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$/g, "");
-  const letterCount = (cleanWord.match(/[a-zA-Z0-9]/g) || []).length;
-
-  if (letterCount < 3 || cleanWord.length === 0) {
+  if (cleanWord.length === 0 || (cleanWord.match(/[a-zA-Z0-9]/g) || []).length < 3) {
     hideOverlay();
     return;
   }
@@ -78,10 +110,16 @@ function handleTextSelection() {
   selectedText = word;
   selectionRect = rect;
 
-  setTimeout(() => {
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+  }
+
+  debounceTimer = window.setTimeout(() => {
+    debounceTimer = null;
+    const currentSel = window.getSelection();
     if (
-      selectedText === word &&
-      window.getSelection()?.toString().trim() === text
+      currentSel?.toString().trim() === word &&
+      selectedText === word
     ) {
       showOverlay(word, rect);
     }
@@ -120,10 +158,17 @@ window.addEventListener("scroll", () => {
         const range = selection.getRangeAt(0);
         const newRect = range.getBoundingClientRect();
 
-        if (overlayComponent) {
-          overlayComponent.$set?.({
-            x: newRect.left + window.scrollX,
-            y: newRect.top + window.scrollY - 10,
+        // Unmount and remount with updated props
+        if (overlayComponent && overlayContainer) {
+          unmount(overlayComponent);
+          overlayComponent = mount(Overlay, {
+            target: overlayContainer,
+            props: {
+              word: selectedText,
+              x: newRect.left + window.scrollX,
+              y: newRect.top + window.scrollY - 10,
+              onClose: hideOverlay,
+            },
           });
         }
         selectionRect = newRect;

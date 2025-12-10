@@ -102,7 +102,7 @@ export function Notification(message: string): void {
     chrome.notifications.create(
       {
         type: "basic",
-        iconUrl: chrome.runtime.getURL("icon.png"),
+        iconUrl: chrome.runtime.getURL("/icons/57.png"),
         title: "Highlight Notification",
         message: message,
       },
@@ -124,7 +124,7 @@ export async function chromeBroadcast(message: any) {
   try {
     const tabs = await chrome.tabs.query({});
     for (const tab of tabs) {
-      tab.id && chrome.tabs.sendMessage(tab.id, message).catch(() => {});
+      tab.id && chrome.tabs.sendMessage(tab.id, message).catch(() => { });
     }
   } catch (e) {
     console.error("[Broadcast error]", e);
