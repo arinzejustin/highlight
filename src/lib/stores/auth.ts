@@ -7,7 +7,7 @@ import {
   chromeBroadcast,
   Notification,
 } from "$lib/utils/chromeWrap";
-import { loginUser, getUserById } from "$lib/utils/api";
+import { getUserById } from "$lib/utils/api";
 import type { User, LogoutReason, AuthState } from "$lib/types";
 
 const STORAGE_KEYS = {
@@ -55,6 +55,7 @@ function createAuthStore() {
 
   async function performLogout(
     reason: string = LOGOUT_REASONS.MANUAL,
+    silent: boolean = false,
   ): Promise<void> {
     try {
       set(createInitialState());
@@ -70,7 +71,7 @@ function createAuthStore() {
         type: BROADCAST_EVENTS.LOGGED_OUT,
         reason,
       });
-
+      if (silent) return;
       Notification(reason);
     } catch (error) {
       console.error("Error during logout:", error);
@@ -168,9 +169,8 @@ function createAuthStore() {
       }
     },
 
-    async login(email: string, password: string): Promise<boolean> {
+    async login(result: { token: string; userId: string; user: User } | null): Promise<boolean> {
       try {
-        const result = await loginUser(email, password);
 
         if (!result?.token || !result?.userId) {
           console.error("Invalid login response: missing token or userId");
@@ -211,8 +211,8 @@ function createAuthStore() {
     /**
      * Logs out the current user
      */
-    async logout(): Promise<void> {
-      await performLogout(LOGOUT_REASONS.MANUAL);
+    async logout(silent: boolean = false): Promise<void> {
+      await performLogout(LOGOUT_REASONS.MANUAL, silent);
     },
 
     /**

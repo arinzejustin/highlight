@@ -1,19 +1,25 @@
 <script lang="ts">
     import { onMount } from "svelte";
 
-    let { onVerify = (success: boolean) => {}, tolerance = 15 } = $props<{
+    let {
+        onVerify = (success: boolean) => {},
+        tolerance = 15,
+        onError = (error: Error) => {},
+    } = $props<{
         onVerify: (success: boolean) => void;
         tolerance?: number;
+        onError?: (error: Error) => void;
     }>();
 
     // State
     let dragPosition = $state(0);
     let isDragging = $state(false);
-    let isVerified = $state(false);
+    let isVerified = $state<boolean | null>(null);
     let targetPosition = $state(0);
     let dragPath = $state([]) as { x: number; time: number }[];
     let startTime = $state(null) as number | null;
     let sliderRef: HTMLDivElement;
+    let errorCount = $state(0);
 
     onMount(() => {
         generateNewChallenge();
@@ -89,6 +95,15 @@
         onVerify(success);
 
         if (!success) {
+            errorCount++;
+            if (errorCount >= 5) {
+                onError(
+                    new Error(
+                        "Multiple failed CAPTCHA attempts detected. Possible bot activity.",
+                    ),
+                );
+                return;
+            }
             setTimeout(generateNewChallenge, 1500);
         }
     }
@@ -125,12 +140,16 @@
     ontouchend={handleEnd}
 />
 
-<div class="captcha-container">
-    <div class="captcha-header">
-        <h3>Verify you're human</h3>
+<div class="w-full max-w-[400px] p-6 bg-card font-extension">
+    <div class="flex justify-between items-center mb-2">
+        <h3 class="m-0 text-lg font-semibold text-foreground">
+            Verify you're human
+        </h3>
         <button
-            class="reset-btn"
-            on:click={handleReset}
+            class="bg-transparent border-none p-2 cursor-pointer text-primary rounded hover:bg-muted transition-all duration-200"
+            onclick={() => {
+                handleReset();
+            }}
             aria-label="Reset challenge"
         >
             <svg
@@ -148,34 +167,57 @@
         </button>
     </div>
 
-    <div class="instruction">Drag the slider to align with the target</div>
+    <!-- Instruction -->
+    <div class="text-sm text-muted-foreground mb-6">
+        Drag the slider to align with the target
+    </div>
 
-    <div class="slider-container" bind:this={sliderRef}>
+    <!-- Slider Container -->
+    <div class="relative h-[60px] my-5" bind:this={sliderRef}>
         <!-- Target indicator -->
-        <div class="target-indicator" style="left: {targetPosition * 100}%">
-            <div class="target-line"></div>
-            <div class="target-dot"></div>
+        <div
+            class="absolute top-0 transform -translate-x-1/2 z-10 pointer-events-none"
+            style="left: {targetPosition * 100}%"
+        >
+            <div
+                class="w-0.5 h-[60px] bg-linear-to-b from-primary to-blue-400 opacity-60 mx-auto"
+            ></div>
+            <div
+                class="w-3 h-3 bg-primary rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 shadow-lg"
+                style="box-shadow: 0 0 0 4px rgb(var(--primary) / 0.2)"
+            ></div>
         </div>
 
         <!-- Slider track -->
-        <div class="slider-track">
+        <div
+            class="absolute top-1/2 transform -translate-y-1/2 w-full h-2 bg-muted rounded overflow-hidden"
+        >
             <div
-                class="slider-fill"
+                class="h-full rounded transition-colors duration-300 {isVerified ===
+                true
+                    ? 'bg-emerald-500'
+                    : isVerified === false
+                      ? 'bg-destructive'
+                      : 'bg-muted-foreground'}"
                 style="width: {dragPosition * 100}%"
-                class:verified={isVerified === true}
-                class:failed={isVerified === false}
             ></div>
         </div>
 
         <!-- Draggable handle -->
         <div
-            class="slider-handle"
+            class="absolute top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-card border-2 rounded-full cursor-grab flex items-center justify-center transition-all duration-200 shadow-md z-20 select-none hover:shadow-lg"
+            class:cursor-grabbing={isDragging}
+            class:scale-110={isDragging}
+            class:shadow-xl={isDragging}
+            class:border-emerald-500={isVerified === true}
+            class:bg-emerald-500={isVerified === true}
+            class:text-white={isVerified !== null}
+            class:border-destructive={isVerified === false}
+            class:bg-destructive={isVerified === false}
+            class:border-muted-foreground={isVerified === null}
             style="left: {dragPosition * 100}%"
-            class:dragging={isDragging}
-            class:verified={isVerified === true}
-            class:failed={isVerified === false}
-            on:mousedown={handleMouseDown}
-            on:touchstart={handleTouchStart}
+            onmousedown={(e) => handleMouseDown(e)}
+            ontouchstart={(e) => handleTouchStart(e)}
             role="slider"
             tabindex="0"
             aria-valuemin="0"
@@ -224,9 +266,11 @@
 
     {#if isVerified !== null}
         <div
-            class="result-message"
-            class:success={isVerified === true}
-            class:error={isVerified === false}
+            class="text-center p-3 rounded-lg text-sm font-medium mt-4"
+            class:bg-emerald-100={isVerified === true}
+            class:text-emerald-900={isVerified === true}
+            class:bg-red-100={isVerified === false}
+            class:text-red-900={isVerified === false}
         >
             {isVerified
                 ? "✓ Verification successful!"
@@ -234,172 +278,3 @@
         </div>
     {/if}
 </div>
-
-<style>
-    .captcha-container {
-        width: 100%;
-        max-width: 400px;
-        padding: 24px;
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-            sans-serif;
-    }
-
-    .captcha-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 8px;
-    }
-
-    h3 {
-        margin: 0;
-        font-size: 18px;
-        font-weight: 600;
-        color: #1a1a1a;
-    }
-
-    .reset-btn {
-        background: none;
-        border: none;
-        padding: 8px;
-        cursor: pointer;
-        color: #666;
-        border-radius: 6px;
-        transition: all 0.2s;
-    }
-
-    .reset-btn:hover {
-        background: #f5f5f5;
-        color: #333;
-    }
-
-    .instruction {
-        font-size: 14px;
-        color: #666;
-        margin-bottom: 24px;
-    }
-
-    .slider-container {
-        position: relative;
-        height: 60px;
-        margin: 20px 0;
-    }
-
-    .target-indicator {
-        position: absolute;
-        top: 0;
-        transform: translateX(-50%);
-        z-index: 1;
-        pointer-events: none;
-    }
-
-    .target-line {
-        width: 2px;
-        height: 60px;
-        background: linear-gradient(to bottom, #3b82f6, #60a5fa);
-        margin: 0 auto;
-        opacity: 0.6;
-    }
-
-    .target-dot {
-        width: 12px;
-        height: 12px;
-        background: #3b82f6;
-        border-radius: 50%;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
-    }
-
-    .slider-track {
-        position: absolute;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 100%;
-        height: 8px;
-        background: #e5e7eb;
-        border-radius: 4px;
-        overflow: hidden;
-    }
-
-    .slider-fill {
-        height: 100%;
-        background: #94a3b8;
-        transition: background 0.3s;
-        border-radius: 4px;
-    }
-
-    .slider-fill.verified {
-        background: #10b981;
-    }
-
-    .slider-fill.failed {
-        background: #ef4444;
-    }
-
-    .slider-handle {
-        position: absolute;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        width: 48px;
-        height: 48px;
-        background: white;
-        border: 2px solid #cbd5e1;
-        border-radius: 50%;
-        cursor: grab;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-        z-index: 2;
-        user-select: none;
-    }
-
-    .slider-handle:hover {
-        border-color: #94a3b8;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    }
-
-    .slider-handle.dragging {
-        cursor: grabbing;
-        transform: translate(-50%, -50%) scale(1.1);
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
-    }
-
-    .slider-handle.verified {
-        border-color: #10b981;
-        background: #10b981;
-        color: white;
-    }
-
-    .slider-handle.failed {
-        border-color: #ef4444;
-        background: #ef4444;
-        color: white;
-    }
-
-    .result-message {
-        text-align: center;
-        padding: 12px;
-        border-radius: 8px;
-        font-size: 14px;
-        font-weight: 500;
-        margin-top: 16px;
-    }
-
-    .result-message.success {
-        background: #d1fae5;
-        color: #065f46;
-    }
-
-    .result-message.error {
-        background: #fee2e2;
-        color: #991b1b;
-    }
-</style>
