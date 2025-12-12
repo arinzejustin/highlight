@@ -2,6 +2,8 @@
   import { onMount } from "svelte";
   import { addWord } from "$lib/utils/idb";
   import { fetchMeaning } from "$lib/utils/api";
+  import { authStore } from "$lib/stores/auth";
+  import { retriveId } from "$lib/utils/Device";
   import { Loader, Save, X } from "@lucide/svelte";
 
   interface Props {
@@ -18,14 +20,18 @@
   let error = $state<string | null>(null);
   let isSaving = $state(false);
   let saved = $state(false);
+  let deviceId = $state(undefined) as string | undefined;
+
+  let authToken = $derived($authStore.authToken);
 
   let alive = true;
   let closeTimeout: number | null = null;
 
   onMount(() => {
     (async () => {
+      deviceId = await retriveId();
       try {
-        const result = await fetchMeaning(word);
+        const result = await fetchMeaning(word, authToken, deviceId);
         if (!alive) return;
         meaning = result;
       } catch {

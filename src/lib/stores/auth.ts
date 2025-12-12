@@ -46,7 +46,7 @@ function createInitialState(): AuthState {
     userId: null,
     authToken: null,
     hasCompletedOnboarding: false,
-    user: null,
+    user: null
   };
 }
 

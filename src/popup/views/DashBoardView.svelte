@@ -20,7 +20,7 @@
         onSignIn?: () => void;
         openList?: () => void;
     }>();
-    let hostname = $state("");
+    let hostname = $state(null) as string | null;
     let totalRequests = $state(1247);
     let successfulRequests = $state(1189);
     let failedRequests = $state(58);
@@ -69,7 +69,48 @@
     };
 
     onMount(() => {
-        hostname = window.location.hostname;
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            const tab = tabs[0];
+
+            if (!tab?.url) {
+                hostname = null;
+                return;
+            }
+
+            const url = tab.url;
+
+            const internalProtocols = [
+                "chrome://",
+                "edge://",
+                "brave://",
+                "opera://",
+                "about:",
+                "chrome-extension://",
+            ];
+            if (internalProtocols.some((p) => url.startsWith(p))) {
+                hostname = null;
+                return;
+            }
+
+            let parsedHostname = "";
+            try {
+                parsedHostname = new URL(url).hostname;
+            } catch {
+                hostname = null;
+                return;
+            }
+
+            const localHosts = ["localhost", "127.0.0.1", "0.0.0.0"];
+            if (
+                localHosts.includes(parsedHostname) ||
+                parsedHostname.endsWith(".local")
+            ) {
+                hostname = null;
+                return;
+            }
+
+            hostname = parsedHostname;
+        });
     });
 </script>
 
@@ -154,29 +195,30 @@
         </div>
     {:else}
         <div class="relative">
-            <div
-                class="my-3 flex w-full items-center gap-x-2 pb-2 justify-center"
-            >
-                <p class="text-lg">{hostname}</p>
-                <Tooltip.Provider>
-                    <Tooltip.Root>
-                        <Tooltip.Trigger>
-                            <button
-                                aria-label="Edit Allow List"
-                                onclick={() => openList()}
-                                class="flex items-center cursor-pointer"
-                            >
-                                <ListFilterPlus class="size-4" />
-                            </button>
-                        </Tooltip.Trigger>
+            {#if hostname}
+                <div
+                    class="my-3 flex w-full items-center gap-x-2 pb-2 justify-center"
+                >
+                    <p class="text-lg">{hostname}</p>
+                    <Tooltip.Provider>
+                        <Tooltip.Root>
+                            <Tooltip.Trigger>
+                                <button
+                                    aria-label="Edit Allow List"
+                                    onclick={() => openList()}
+                                    class="flex items-center cursor-pointer"
+                                >
+                                    <ListFilterPlus class="size-4" />
+                                </button>
+                            </Tooltip.Trigger>
 
-                        <Tooltip.Content>
-                            <p>Edit Allow Lists</p>
-                        </Tooltip.Content>
-                    </Tooltip.Root>
-                </Tooltip.Provider>
-            </div>
-
+                            <Tooltip.Content>
+                                <p>Edit Allow Lists</p>
+                            </Tooltip.Content>
+                        </Tooltip.Root>
+                    </Tooltip.Provider>
+                </div>
+            {/if}
             <div
                 class="flex flex-col justify-between items-center space-y-1 mb-4"
             >

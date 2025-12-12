@@ -25,6 +25,10 @@ chrome.runtime.onMessage.addListener((message) => {
   if (message.type === "USER_UPDATED") {
     user = message.user || null;
   }
+
+  if (message.type === "Extension deactivated" || message.type === "Extension activated") {
+    user!.extensionMode! = message.isActivated;
+  }
 });
 
 loadUserData();
@@ -185,5 +189,3 @@ window.addEventListener("beforeunload", () => {
     overlayContainer.parentNode.removeChild(overlayContainer);
   }
 });
-
-console.log("[Highlight Extension]: Content script loaded");

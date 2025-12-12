@@ -1,4 +1,3 @@
-
 import { syncWords, getUserById, syncUser, InitDeviceId } from "$lib/utils/api";
 import { getAllWords, markWordAsSynced } from "$lib/utils/idb";
 import {
@@ -10,7 +9,7 @@ import {
   chromeBroadcast,
   Notification,
 } from "$lib/utils/chromeWrap";
-import { getDeviceInfo } from "$lib/utils/Device";
+import { getDeviceInfo, retriveId, setDeviceId } from "$lib/utils/Device";
 import type { User, AuthData, DeviceInfo } from "$lib/types";
 
 interface SyncState {
@@ -26,7 +25,7 @@ const STORAGE_KEYS = {
   USER_ID: "userId",
   USER: "user",
   ONBOARDING: "hasCompletedOnboarding",
-  DEVICE_ID: 'deviceId'
+  DEVICE_ID: "deviceId",
 } as const;
 
 const LOCAL_STORAGE_KEYS = {
@@ -69,7 +68,7 @@ const USER_FIELDS_TO_MONITOR = [
   "plan",
   "email",
   "username",
-  "requestCount",
+  "records",
   "allowedList",
   "extensionMode",
 ] as const satisfies readonly (keyof User)[];
@@ -126,8 +125,6 @@ function getAccountStatusReason(status: string): string {
 
 async function performLogout(reason: string): Promise<void> {
   try {
-    console.log(`[Highlight Logout] ${reason}`);
-
     clearAllIntervals();
 
     await removeChromeStorage([
@@ -144,7 +141,7 @@ async function performLogout(reason: string): Promise<void> {
 
     Notification(reason);
   } catch (error) {
-    console.error("[Highlight Logout] Failed to complete logout:", error);
+    console.error("[Highlight] Logout failed:", error);
   }
 }
 
@@ -160,12 +157,9 @@ function clearAllIntervals(): void {
 }
 
 async function registerDeviceIfNeeded(): Promise<void> {
-  const storedData = await getChromeStorage<{ deviceId?: string }>(
-    [STORAGE_KEYS.DEVICE_ID],
-  );
+  const deviceId = await retriveId();
 
-  if (storedData.deviceId) {
-    console.log("[Highlight Device] Device already registered");
+  if (deviceId) {
     return;
   }
 
@@ -178,22 +172,14 @@ async function registerDeviceIfNeeded(): Promise<void> {
       throw new Error("Failed to initialize device ID");
     }
 
-    await setChromeStorage({
-      [STORAGE_KEYS.DEVICE_ID]: deviceId,
-    });
+    await setDeviceId(deviceId);
   } catch (error) {
-    console.error("[Highlight Device] Registration failed:", error);
+    console.error("[Highlight] Device registration failed:", error);
   }
 }
 
 async function syncWordsIfNeeded(): Promise<void> {
-  if (isSyncing) {
-    console.log("[Highlight Sync] Already syncing, skipping...");
-    return;
-  }
-
-  if (!navigator.onLine) {
-    console.log("[Highlight Sync] Offline, skipping...");
+  if (isSyncing || !navigator.onLine) {
     return;
   }
 
@@ -205,7 +191,6 @@ async function syncWordsIfNeeded(): Promise<void> {
     ]);
 
     if (!authData.authToken) {
-      console.log("[Highlight Sync] No auth token, skipping sync");
       return;
     }
 
@@ -216,8 +201,6 @@ async function syncWordsIfNeeded(): Promise<void> {
       return;
     }
 
-    console.log(`[Highlight Sync] Syncing ${unsyncedWords.length} word(s)...`);
-
     const result = await syncWords(unsyncedWords, authData.authToken);
 
     if (result.success) {
@@ -227,17 +210,11 @@ async function syncWordsIfNeeded(): Promise<void> {
         [LOCAL_STORAGE_KEYS.LAST_SYNC_TIME]: Date.now(),
         [LOCAL_STORAGE_KEYS.FAILED_SYNC_ATTEMPTS]: 0,
       });
-
-      console.log(
-        `[Highlight Sync] Successfully synced ${unsyncedWords.length} word(s)`,
-      );
     } else {
-      throw new Error(
-        "[Highlight Sync] Sync failed: server returned unsuccessful status",
-      );
+      throw new Error("Sync failed: server returned unsuccessful status");
     }
   } catch (error: any) {
-    console.error("[Highlight Sync] Error:", error);
+    console.error("[Highlight] Sync error:", error);
 
     if (isAuthenticationError(error)) {
       await performLogout(getLogoutReason(error));
@@ -262,13 +239,7 @@ async function syncWordsIfNeeded(): Promise<void> {
 }
 
 async function checkUserStatus(): Promise<void> {
-  if (isCheckingUser) {
-    console.log("[Highlight UserCheck] Already checking, skipping...");
-    return;
-  }
-
-  if (!navigator.onLine) {
-    console.log("[Highlight UserCheck] Offline, skipping...");
+  if (isCheckingUser || !navigator.onLine) {
     return;
   }
 
@@ -282,16 +253,13 @@ async function checkUserStatus(): Promise<void> {
     ]);
 
     if (!authData.authToken || !authData.userId) {
-      console.log("[Highlight UserCheck] No auth credentials, skipping");
       return;
     }
 
     const freshUser = await getUserById(authData.userId, authData.authToken);
 
     if (!isValidUserData(freshUser)) {
-      console.error(
-        "[Highlight UserCheck] Invalid user data received from server",
-      );
+      console.error("[Highlight] Invalid user data received");
       await performLogout(LOGOUT_REASONS.INVALID_USER_DATA);
       return;
     }
@@ -313,8 +281,6 @@ async function checkUserStatus(): Promise<void> {
     );
 
     if (hasChanged) {
-      console.log("[Highlight UserCheck] User data changed, updating...");
-
       await setChromeStorage({
         [STORAGE_KEYS.USER]: freshUser,
       });
@@ -325,11 +291,9 @@ async function checkUserStatus(): Promise<void> {
       });
 
       Notification(NOTIFICATION_MESSAGES.USER_UPDATED);
-    } else {
-      console.log("[Highlight UserCheck] User data unchanged");
     }
   } catch (error: any) {
-    console.error("[Highlight UserCheck] Error:", error);
+    console.error("[Highlight] User check error:", error);
 
     if (isAuthenticationError(error) || error.status === 404) {
       await performLogout(getLogoutReason(error));
@@ -340,13 +304,7 @@ async function checkUserStatus(): Promise<void> {
 }
 
 async function syncUserToBackend(): Promise<boolean> {
-  if (isSyncingUser) {
-    console.log("[Highlight UserSync] Already syncing user, skipping...");
-    return false;
-  }
-
-  if (!navigator.onLine) {
-    console.log("[Highlight UserSync] Offline, skipping...");
+  if (isSyncingUser || !navigator.onLine) {
     return false;
   }
 
@@ -356,19 +314,17 @@ async function syncUserToBackend(): Promise<boolean> {
     const authData = await getChromeStorage<AuthData>([
       STORAGE_KEYS.AUTH_TOKEN,
       STORAGE_KEYS.USER,
+      STORAGE_KEYS.DEVICE_ID,
     ]);
 
-    if (!authData.authToken || !authData.user?.userId) {
-      console.log("[Highlight UserSync] No auth token or user data, skipping");
+    if (!authData.deviceId) {
       return false;
     }
-
-    console.log("[Highlight UserSync] Syncing user data to backend...");
 
     return await syncUser(authData);
 
   } catch (error: any) {
-    console.error("[Highlight UserSync] Failed to sync user:", error);
+    console.error("[Highlight] User sync error:", error);
 
     if (isAuthenticationError(error)) {
       await performLogout(getLogoutReason(error));
@@ -400,7 +356,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
       return { success: false, error: "Unknown message type" };
     } catch (error) {
-      console.error("[Highlight MessageHandler] Error:", error);
+      console.error("[Highlight] Message handler error:", error);
       return { success: false, error: String(error) };
     }
   };
@@ -408,7 +364,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   handleAsync()
     .then(sendResponse)
     .catch((error) => {
-      console.error("[Highlight MessageHandler] Unexpected error:", error);
+      console.error("[Highlight] Unexpected error:", error);
       sendResponse({ success: false, error: String(error) });
     });
 
@@ -418,57 +374,48 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 function scheduleTasks(): void {
   clearAllIntervals();
 
-  console.log("[Highlight Scheduler] Starting background tasks...");
-
   syncIntervalId = setInterval(() => {
     syncWordsIfNeeded().catch((error) => {
-      console.error("[Highlight Scheduler] Sync task failed:", error);
+      console.error("[Highlight] Sync task failed:", error);
     });
   }, SYNC_INTERVAL) as unknown as number;
 
   userCheckIntervalId = setInterval(() => {
     checkUserStatus().catch((error) => {
-      console.error("[Highlight Scheduler] User check task failed:", error);
+      console.error("[Highlight] User check task failed:", error);
     });
   }, USER_CHECK_INTERVAL) as unknown as number;
 
   setTimeout(() => {
-    console.log("[Highlight Scheduler] Running initial checks...");
     checkUserStatus().catch((error) => {
-      console.error("[Highlight Scheduler] Initial user check failed:", error);
+      console.error("[Highlight] Initial user check failed:", error);
     });
     syncWordsIfNeeded().catch((error) => {
-      console.error("[Highlight Scheduler] Initial sync failed:", error);
+      console.error("[Highlight] Initial sync failed:", error);
     });
   }, 8000);
 }
 
 chrome.runtime.onInstalled.addListener((details) => {
-  console.log(`[Highlight Lifecycle] Extension ${details.reason}`);
   registerDeviceIfNeeded().catch((error) => {
-    console.error("[Highlight Device] Registration on install failed:", error);
+    console.error("[Highlight] Device registration failed:", error);
   });
   scheduleTasks();
 });
 
 chrome.runtime.onStartup.addListener(() => {
-  console.log("[Highlight Lifecycle] Browser started");
   registerDeviceIfNeeded().catch((error) => {
-    console.error("[Highlight Device] Registration on startup failed:", error);
+    console.error("[Highlight] Device registration failed:", error);
   });
   scheduleTasks();
 });
 
 addEventListener("online", () => {
-  console.log("[Highlight Network] Back online, running checks...");
   checkUserStatus().catch((error) => {
-    console.error(
-      "[Highlight Network] User check on reconnect failed:",
-      error,
-    );
+    console.error("[Highlight] User check on reconnect failed:", error);
   });
   syncWordsIfNeeded().catch((error) => {
-    console.error("[Highlight Network] Sync on reconnect failed:", error);
+    console.error("[Highlight] Sync on reconnect failed:", error);
   });
 });
 

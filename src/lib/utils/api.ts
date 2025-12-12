@@ -2,10 +2,18 @@ import type { SavedWord, User, AuthData, DeviceInfo } from "$lib/types";
 
 const API_BASE_URL = "https://api.yourapp.com";
 
-export async function fetchMeaning(word: string): Promise<string> {
+export async function fetchMeaning(word: string, authToken: string | null, deviceId?: string): Promise<string> {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/meaning?word=${encodeURIComponent(word)}`,
+      `${API_BASE_URL}/meaning`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: authToken ? `Bearer ${authToken}` : '',
+        "Device-ID": deviceId ?? "",
+      },
+      body: JSON.stringify({ word }),
+    }
     );
 
     if (!response.ok) {
@@ -118,18 +126,21 @@ export async function syncUser(
   authData: AuthData
 ): Promise<boolean> {
   try {
-    if (!authData.user?.userId) {
-      console.log("[Highlight UserSync] No userId to sync");
+    if (!authData.deviceId) {
+      console.log("[Highlight UserSync] No deviceId or user id to sync");
       return false;
     }
 
+    const userID = authData.user?.userId || authData.deviceId;
+
     const response = await fetch(
-      `${API_BASE_URL}/users/${authData.user.userId}`,
+      `${API_BASE_URL}/users/${userID}`,
       {
         method: "PUT",
         headers: {
-          Authorization: `Bearer ${authData.authToken}`,
+          Authorization: `Bearer ${authData.authToken || ''}`,
           "Content-Type": "application/json",
+          "Device-ID": authData.deviceId ?? "",
         },
         body: JSON.stringify(authData.user),
       },

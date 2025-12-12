@@ -11,9 +11,9 @@ export interface SavedWord {
 
 export interface AuthData {
   authToken: string | null;
-  deviceId?: string;
   userId: string | null;
   user: User | null;
+  deviceId?: string | null;
 }
 
 export interface SyncResponse {
@@ -43,7 +43,12 @@ export interface User {
   status: "active" | "suspended" | "deleted";
   allowedList?: string[],
   extensionMode?: boolean;
-  requestCount?: string;
+  records?: {
+    requestCount: number;
+    lastRequestDate: string;
+    failedRequestCount: number;
+    successfulRequestCount: number;
+  };
 }
 
 export interface AuthState extends AuthData {

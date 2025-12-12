@@ -1,7 +1,10 @@
 {
   "manifest_version": 3,
   "name": "Highlight Extension",
-  "author": "Justin Arinze",
+  "author": {
+    "email": "codewitharinzejustin@gmail.com"
+  },
+  "default_locale": "en",
   "homepage_url": "https://yourwebsite.com",
   "version": "1.0.0",
   "description": "A smart browser extension that lets you highlight any word on any webpage to instantly see its meaning, save it for later, and sync your vocabulary across devices.",
@@ -18,14 +21,17 @@
   "action": {
     "default_popup": "src/popup/index.html",
     "default_icon": {
-      "16": "icons/16.png",
-      "48": "icons/57.png",
-      "128": "icons/128.png"
+      "16": "src/assets/icons/16.png",
+      "48": "src/assets/icons/57.png",
+      "128": "src/assets/icons/128.png"
     }
   },
   "background": {
-    "service_worker": "background/service-worker.js",
-    "type": "module"
+    "service_worker": "src/background/service-worker.ts",
+    "persistent": true,
+    "scripts": [
+      "src/background/service-worker.ts"
+    ]
   },
   "content_scripts": [
     {
@@ -33,19 +39,20 @@
         "<all_urls>"
       ],
       "js": [
-        "content/content-script.js"
+        "src/content/content-script.ts"
       ],
       "css": [
-        "content/content-style.css"
+        "src/content/content-style.css"
       ],
-      "run_at": "document_end"
+      "run_at": "document_end",
+      "all_frames": true
     }
   ],
   "options_page": "src/options/index.html",
   "icons": {
-    "16": "icons/16.png",
-    "48": "icons/57.png",
-    "128": "icons/128.png"
+    "16": "src/assets/icons/16.png",
+    "48": "src/assets/icons/57.png",
+    "128": "src/assets/icons/128.png"
   },
   "web_accessible_resources": [
     {
@@ -61,5 +68,6 @@
     "gecko": {
       "id": "your-extension@example.com"
     }
-  }
+  },
+  "update_url": "https://your-update-url.com/updates.json"
 }

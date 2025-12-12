@@ -4,7 +4,7 @@
 
 @font-face {
     font-family: "highlight-font";
-    src: url("../fonts/Hartwell-Regular.otf") format("opentype");
+    src: url("../assets/fonts/Hartwell-Regular.otf") format("opentype");
     font-style: normal;
     font-weight: 300 800;
     font-stretch: 100%;
@@ -17,8 +17,9 @@
     font-weight: 300 800;
     font-stretch: 100%;
     font-display: swap;
-    src: url("../fonts/Hartwell-Heavy-Italic.otf") format("opentype");
+    src: url("../assets/fonts/Hartwell-Heavy-Italic.otf") format("opentype");
 }
+
 
 /* @import "tailwindcss/preflight.css";
 
