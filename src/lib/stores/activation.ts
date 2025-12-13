@@ -49,22 +49,15 @@ function createActivationStore() {
         });
 
         Notification(NOTIFICATION_MESSAGES.ACTIVATED);
-
-        console.info("[Highlight Extension] First run detected — auto activated");
         return;
       }
 
       set({ isActivated: data.user?.extensionMode! });
-      console.info(
-        "[Highlight Extension] Initialized with state:",
-        data.user?.extensionMode
-      );
     } catch (error) {
       console.error("[Highlight Extension] Init failed:", error);
       set({ isActivated: false });
     }
   }
-
 
   async function setActivation(isActivated: boolean) {
     if (current === isActivated) return;
@@ -84,8 +77,6 @@ function createActivationStore() {
       Notification(
         isActivated ? NOTIFICATION_MESSAGES.ACTIVATED : NOTIFICATION_MESSAGES.DEACTIVATED
       );
-
-      console.info(`[Highlight Extension] Extension ${isActivated ? "activated" : "deactivated"}`);
     } catch (error) {
       console.error("[Highlight Extension] Failed to update state:", error);
       throw error;

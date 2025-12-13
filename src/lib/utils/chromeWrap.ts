@@ -102,7 +102,7 @@ export function Notification(message: string): void {
     chrome.notifications.create(
       {
         type: "basic",
-        iconUrl: chrome.runtime.getURL("/icons/57.png"),
+        iconUrl: chrome.runtime.getURL("/src/assets/icons/57.png"),
         title: "Highlight Notification",
         message: message,
       },
