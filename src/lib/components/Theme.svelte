@@ -4,15 +4,20 @@
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import { getLocalStorage, setLocalStorage } from "$lib/utils/chromeWrap";
 
-    let theme = $state<"light" | "dark">("light");
+    let { onChange } = $props<{
+        onChange?: (theme: "light" | "dark" | "system") => void;
+    }>();
 
+    let theme = $state<"light" | "dark">("light");
     let isDarkMode = $derived(theme === "dark");
 
     $effect(() => {
         if (isDarkMode) {
             document.documentElement.classList.add("dark");
+            onChange?.("dark");
         } else {
             document.documentElement.classList.remove("dark");
+            onChange?.("light");
         }
     });
 

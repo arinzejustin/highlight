@@ -1,6 +1,16 @@
+@font-face {
+    font-family: "highlight-font";
+    src: url("../assets/fonts/Hartwell-Regular.otf") format("opentype");
+    font-style: normal;
+    font-weight: 300 800;
+    font-stretch: 100%;
+    font-display: swap;
+}
+
 #highlight-overlay-container {
     all: initial;
     font-family:
+        "highlight-font",
         system-ui,
         -apple-system,
         sans-serif;

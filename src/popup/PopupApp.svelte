@@ -16,17 +16,24 @@
     import OnboardingView from "./views/OnboardingView.svelte";
     import SyncingView from "./views/SyncingView.svelte";
     import DashBoardView from "./views/DashBoardView.svelte";
+    import Overlay from "$lib/components/Overlay.svelte";
     import Theme from "$lib/components/Theme.svelte";
     import { Toaster } from "$lib/components/ui/sonner/index.js";
     import { toast } from "svelte-sonner";
     import * as Tooltip from "$lib/components/ui/tooltip/index.js";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
 
-    let currentView: "login" | "onboarding" | "syncing" | "dashboard" =
-        $state("dashboard");
+    let currentView:
+        | "login"
+        | "onboarding"
+        | "syncing"
+        | "dashboard"
+        | "overlay" = $state("dashboard");
     let isLoading = $state(false);
     let showAccount = $state(false);
     let allowList = $state(false);
+    let themeToast = $state<"light" | "dark" | "system">("system");
+
     let loggedIn = $derived($authStore.isAuthenticated);
     let user = $derived($authStore.user);
     let unsyncedCount = $derived($wordsStore.filter((w) => !w.synced).length);
@@ -38,7 +45,7 @@
     async function copyLink() {
         try {
             await navigator.clipboard.writeText(
-                "https://highlight.io/download?src=ext",
+                "https://highlight.io/download?src=ext&utm_source=BEXshare&utm_medium=freeform",
             );
             toast.success("Link Copied!");
         } catch (e) {
@@ -141,7 +148,11 @@
                                 >Share on Linkedin</DropdownMenu.Item
                             >
                             <DropdownMenu.Separator />
-                            <DropdownMenu.Item>Copy link</DropdownMenu.Item>
+                            <DropdownMenu.Item
+                                onclick={() => {
+                                    copyLink();
+                                }}>Copy link</DropdownMenu.Item
+                            >
                         </DropdownMenu.SubContent>
                     </DropdownMenu.Sub>
                     <DropdownMenu.Separator />
@@ -175,6 +186,15 @@
                 allowList = true;
             }}
         />
+    {:else if currentView === "overlay"}
+        <Overlay
+            word="hello"
+            x={300}
+            y={300}
+            onClose={() => {
+                console.log("closed");
+            }}
+        />
     {/if}
     <div
         class="flex flex-row justify-between items-center mt-4 pt-4 mb-1 w-full"
@@ -183,7 +203,7 @@
             <Tooltip.Provider>
                 <Tooltip.Root>
                     <Tooltip.Trigger>
-                        <Theme />
+                        <Theme onChange={(theme) => (themeToast = theme)} />
                     </Tooltip.Trigger>
                     <Tooltip.Content>
                         <p>Change Theme</p>
@@ -282,4 +302,4 @@
         </div>
     </div>
 </div>
-<Toaster richColors position="top-center" duration={5000} />
+<Toaster theme={themeToast} richColors position="top-center" duration={5000} />

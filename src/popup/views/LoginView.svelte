@@ -24,7 +24,7 @@
 
     async function handleLogin() {
         if (!email || !password) {
-            error = "Please enter email and password";
+            toast.error("Please enter email and password");
             return;
         }
 

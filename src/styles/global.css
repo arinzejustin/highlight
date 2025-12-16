@@ -160,6 +160,13 @@
 
 html,
 body,
-div {
+div,
+p,
+input {
     font-family: "highlight-font", sans-serif;
+    @apply text-base;
+}
+
+div[data-tooltip-content] p {
+    @apply text-sm!;
 }

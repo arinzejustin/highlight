@@ -1,29 +1,40 @@
-import type { SavedWord, User, AuthData, DeviceInfo } from "$lib/types";
+import type { SavedWord, User, AuthData, DeviceInfo, WordResponse } from "$lib/types";
 
 const API_BASE_URL = "https://api.yourapp.com";
 
-export async function fetchMeaning(word: string, authToken: string | null, deviceId?: string): Promise<string> {
+export async function fetchMeaning(word: string, authToken: string | null, deviceId?: string): Promise<WordResponse | string> {
   try {
     const response = await fetch(
       `${API_BASE_URL}/meaning`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: authToken ? `Bearer ${authToken}` : '',
-        "Device-ID": deviceId ?? "",
+        ...(authToken && { Authorization: `Bearer ${authToken}` }),
+        ...(deviceId && { "Device-ID": deviceId }),
+
       },
       body: JSON.stringify({ word }),
-    }
-    );
+    });
 
     if (!response.ok) {
-      throw new Error("Failed to fetch meaning");
+      let message = "Failed to fetch meaning";
+      try {
+        const errorBody = await response.json();
+        message = errorBody?.message ?? message;
+      } catch { }
+
+      return message;
     }
 
-    const data = await response.json();
-    return data.meaning || "No meaning found";
+    const data: WordResponse = await response.json();
+
+    return data;
   } catch (error) {
     console.error("Error fetching meaning:", error);
+    if (error instanceof Error && error.message.includes("Failed to fetch")) {
+      return `Network error while fetching meaning for ${word}.`;
+    }
+
     return `A ${word} is a term that requires further definition.`;
   }
 }
@@ -126,21 +137,19 @@ export async function syncUser(
   authData: AuthData
 ): Promise<boolean> {
   try {
-    if (!authData.deviceId) {
-      console.log("[Highlight UserSync] No deviceId or user id to sync");
+    if (!authData.userId) {
       return false;
     }
 
-    const userID = authData.user?.userId || authData.deviceId;
-
     const response = await fetch(
-      `${API_BASE_URL}/users/${userID}`,
+      `${API_BASE_URL}/users/${authData.userId}`,
       {
         method: "PUT",
         headers: {
-          Authorization: `Bearer ${authData.authToken || ''}`,
           "Content-Type": "application/json",
-          "Device-ID": authData.deviceId ?? "",
+          ...(authData.authToken && { Authorization: `Bearer ${authData.authToken}` }),
+          ...(authData.deviceId && { "Device-ID": authData.deviceId }),
+
         },
         body: JSON.stringify(authData.user),
       },
@@ -149,41 +158,38 @@ export async function syncUser(
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
-
-    console.log("[Highlight UserSync] Successfully synced user to backend");
     return true;
   } catch (error) {
-    console.error("[Highlight UserSync] Sync failed:", error);
     return false;
   }
 }
 
-export async function registerDevice(
-  userId: string,
-  deviceInfo: DeviceInfo,
-  token: string,
-): Promise<boolean> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/users/devices/${userId}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        "Device-ID": deviceInfo.deviceId,
-      },
-      body: JSON.stringify(deviceInfo),
-    });
+// export async function registerDevice(
+//   userId: string,
+//   deviceInfo: DeviceInfo,
+//   token: string,
+// ): Promise<boolean> {
+//   try {
+//     const response = await fetch(`${API_BASE_URL}/users/devices/${userId}`, {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//         Authorization: `Bearer ${token}`,
+//         "Device-ID": deviceInfo.deviceId,
+//       },
+//       body: JSON.stringify(deviceInfo),
+//     });
 
-    if (!response.ok) {
-      throw new Error("Device registration failed");
-    }
+//     if (!response.ok) {
+//       throw new Error("Device registration failed");
+//     }
 
-    return true;
-  } catch (error) {
-    console.error("Device registration error:", error);
-    return false;
-  }
-}
+//     return true;
+//   } catch (error) {
+//     console.error("Device registration error:", error);
+//     return false;
+//   }
+// }
 
 export async function InitDeviceId(deviceInfo: Omit<DeviceInfo, "deviceId">): Promise<string> {
   try {

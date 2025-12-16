@@ -77,3 +77,13 @@ export interface DeviceInfo {
   platform: string;
   engine: string;
 }
+
+export type WordResponse = {
+  meaning: string;
+  error: boolean;
+  errorType?: "not_found" | "exceed_limit";
+  key?: string;
+  audioUrl?: string;
+  phonetics?: string;
+  examples?: string[];
+}
