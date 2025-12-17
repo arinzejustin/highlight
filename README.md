@@ -20,7 +20,7 @@ Saved words are stored securely on your device and can be viewed in a dedicated 
 ## 📖 Key Features
 
 ### ⚡ Instant Definitions  
-Get word meanings instantly through a popup triggered on text highlight — no clicks, no context switching.
+Get word meanings instantly through a popup triggered on text highlight, no clicks, no context switching.
 
 ### ⭐ Save & Review Vocabulary  
 Bookmark words you want to remember. Each saved word includes:  
@@ -68,8 +68,8 @@ Simple. Seamless. Super fast.
 
 **Highlight** only requests:  
 
-- **activeTab** — to read highlighted text  
-- **storage** — to store vocabulary data locally  
+- **activeTab** —> to read highlighted text  
+- **storage** —> to store vocabulary data locally  
 
 No extra permissions. No tracking. No analytics.
 
