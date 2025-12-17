@@ -6,6 +6,7 @@
   import { recordsStore } from "$lib/stores/records";
   import { retriveId } from "$lib/utils/Device";
   import { Loader, Bookmark, Volume2, ChevronDown, X } from "@lucide/svelte";
+  import "./content-style.css";
 
   interface Props {
     word: string;
@@ -13,10 +14,11 @@
     y: number;
     arrowX?: number;
     placement?: "top" | "bottom";
+    isVisible?: boolean;
     onClose: () => void;
   }
 
-  let { word, x, y, arrowX, placement, onClose }: Props = $props();
+  let { word, x, y, arrowX, placement, isVisible, onClose }: Props = $props();
   let meaning = $state<string | null>(null);
   let phonetics = $state<string | null>(null);
   let audioUrl = $state<string | null>(null);
@@ -34,10 +36,10 @@
 
   onMount(async () => {
     try {
+      if (!isMounted) return;
+
       const deviceId = await retriveId();
       const result = await fetchMeaning(word, authToken, deviceId);
-
-      if (!isMounted) return;
 
       if (typeof result === "string") {
         error = result;
@@ -63,6 +65,7 @@
       if (isMounted) error = "Failed to fetch meaning";
     } finally {
       if (isMounted) isLoading = false;
+      addRequestedWord(word, error ? "failed" : "success");
     }
   });
 
@@ -100,7 +103,11 @@
   }
 </script>
 
-<div class="overlay-popup" style="left:{x}px; top:{y}px">
+<div
+  class="overlay-popup"
+  style="left:{x}px; top:{y}px"
+  class:hidden={!isVisible}
+>
   <div class="overlay-content">
     <button class="overlay-close" onclick={onClose} aria-label="Close">
       <X />
@@ -117,8 +124,8 @@
 
     {#if isLoading}
       <div class="overlay-loading">
-        <Loader class="spinner" />
-        <span class="">Loading…</span>
+        <Loader class="spinner" style="margin-right: 4px;" />
+        <span class="">Loading.....…</span>
       </div>
     {:else if error}
       <div class="overlay-error">{error}</div>
@@ -148,7 +155,8 @@
           <button
             class="overlay-action-btn audio-btn"
             onclick={playAudio}
-            aria-label="Play audio"
+            aria-label="Play word pronunciation"
+            title="Play word pronunciation"
           >
             <Volume2 />
           </button>
@@ -208,9 +216,18 @@
     pointer-events: auto;
     will-change: transform, opacity;
     transition:
-      transform 120ms ease-out,
-      opacity 120ms ease-out;
+      opacity 0.2s ease,
+      transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+      left 0.1s linear,
+      top 0.1s linear;
+    transform: scale(1);
     animation: slideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .overlay-popup.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.95);
   }
 
   @keyframes slideIn {
@@ -296,11 +313,10 @@
   }
 
   .spinner {
-    width: 16px;
-    height: 16px;
-    margin-right: 4px;
+    width: 14px;
+    height: 14px;
     color: var(--highlight-extension-foreground);
-    animation: spin 1.5s linear infinite;
+    animation: spin 0.5s linear infinite;
   }
 
   @keyframes spin {

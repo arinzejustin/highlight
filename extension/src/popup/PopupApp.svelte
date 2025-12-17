@@ -16,7 +16,6 @@
     import OnboardingView from "./views/OnboardingView.svelte";
     import SyncingView from "./views/SyncingView.svelte";
     import DashBoardView from "./views/DashBoardView.svelte";
-    import Overlay from "$lib/components/Overlay.svelte";
     import Theme from "$lib/components/Theme.svelte";
     import { Toaster } from "$lib/components/ui/sonner/index.js";
     import { toast } from "svelte-sonner";
@@ -27,8 +26,7 @@
         | "login"
         | "onboarding"
         | "syncing"
-        | "dashboard"
-        | "overlay" = $state("dashboard");
+        | "dashboard" = $state("onboarding");
     let isLoading = $state(false);
     let showAccount = $state(false);
     let allowList = $state(false);
@@ -128,7 +126,7 @@
                         class="cursor-pointer"
                         onclick={() => (allowList = true)}
                     >
-                        <span>Allow list</span>
+                        <span>Disallowed list</span>
                         <DropdownMenu.Shortcut class="text-amber-600">
                             <LockKeyhole class="size-3 text-amber-600" />
                         </DropdownMenu.Shortcut>
@@ -184,15 +182,6 @@
             }}
             openList={() => {
                 allowList = true;
-            }}
-        />
-    {:else if currentView === "overlay"}
-        <Overlay
-            word="hello"
-            x={300}
-            y={300}
-            onClose={() => {
-                console.log("closed");
             }}
         />
     {/if}

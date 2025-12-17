@@ -1,6 +1,6 @@
 import type { SavedWord, User, AuthData, DeviceInfo, WordResponse } from "$lib/types";
 
-const API_BASE_URL = "https://api.yourapp.com";
+const API_BASE_URL = "http://localhost:4000";
 
 export async function fetchMeaning(word: string, authToken: string | null, deviceId?: string): Promise<WordResponse | string> {
   try {

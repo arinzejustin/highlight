@@ -110,6 +110,7 @@ function showOverlay(word: string, rect: DOMRect) {
       y: position.y,
       arrowX: position.arrowX,
       placement: position.side,
+      isVisible: true,
       onClose: () => {
         closedWord = word;
         hideOverlay();
@@ -149,14 +150,23 @@ function handleTextSelection() {
   }
 
   const words = selection.toString().trim().split(/\s+/).filter(Boolean);
+
   if (words.length !== 1) {
     hideOverlay();
     return;
   }
 
   const word = words[0];
-  const cleanWord = word.replace(/^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$/g, "");
-  if (cleanWord.length === 0 || (cleanWord.match(/[a-zA-Z0-9]/g) || []).length < 3) {
+  
+  const isValidWord = /^[a-zA-Z']+$/.test(word);
+
+  if (!isValidWord) {
+    hideOverlay();
+    return;
+  }
+
+  const cleanWord = word.replace(/^'+|'+$/g, "");
+  if (cleanWord.length < 3) {
     hideOverlay();
     return;
   }
@@ -211,44 +221,32 @@ document.addEventListener("mousedown", (e) => {
 });
 
 window.addEventListener("scroll", () => {
-  if (overlayComponent && selectionRect && selectedText) {
-    if (scrollTimeout) return;
+  if (!overlayComponent || !selectedText || !selectionRect) return;
 
-    scrollTimeout = window.setTimeout(() => {
-      scrollTimeout = null;
+  if (scrollTimeout) return;
 
-      const selection = window.getSelection();
-      if (selection && !selection.isCollapsed) {
-        const range = selection.getRangeAt(0);
-        const newRect = range.getBoundingClientRect();
+  scrollTimeout = window.setTimeout(() => {
+    scrollTimeout = null;
 
-        if (!isElementInViewport(newRect)) {
-          hideOverlay();
-          return;
-        }
+    const selection = window.getSelection();
+    if (selection && !selection.isCollapsed && selection.toString().trim() === selectedText) {
+      const range = selection.getRangeAt(0);
+      const newRect = range.getBoundingClientRect();
 
-        if (overlayComponent && overlayContainer) {
-          unmount(overlayComponent);
-          const position = calculateOverlayPosition(newRect);
-          overlayComponent = mount(Overlay, {
-            target: overlayContainer,
-            props: {
-              word: selectedText,
-              x: position.x,
-              y: position.y,
-              onClose: () => {
-                closedWord = selectedText;
-                hideOverlay();
-              },
-            },
-          });
-        }
-        selectionRect = newRect;
-      } else {
-        hideOverlay();
-      }
-    }, 16);
-  }
+      const visible = isElementInViewport(newRect);
+
+      const pos = calculateOverlayPosition(newRect);
+
+      overlayComponent!.x = pos.x;
+      overlayComponent!.y = pos.y;
+      overlayComponent!.isVisible = visible;
+      overlayComponent!.placement = pos.side;
+      overlayComponent!.arrowX = pos.arrowX;
+      selectionRect = newRect;
+    } else {
+      hideOverlay();
+    }
+  }, 10);
 }, { passive: true });
 
 window.addEventListener("beforeunload", () => {

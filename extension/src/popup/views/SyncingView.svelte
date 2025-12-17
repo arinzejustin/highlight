@@ -1,8 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { wordsStore } from "$lib/stores/words";
-    import { authStore } from "$lib/stores/auth";
-    import { RefreshCw, Settings, LogOut } from "@lucide/svelte";
+    import { RefreshCw } from "@lucide/svelte";
 
     interface Props {
         onOpenOptions: () => void;
@@ -37,11 +36,6 @@
         } finally {
             isSyncing = false;
         }
-    }
-
-    async function handleLogout() {
-        await authStore.logout();
-        window.location.reload();
     }
 
     const unsyncedCount = $derived($wordsStore.filter((w) => !w.synced).length);

@@ -48,10 +48,10 @@
         <div
             class="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center"
         >
-            <svelte:component
-                this={steps[currentStep].icon}
-                class="w-10 h-10 text-primary"
-            />
+            {#if true}
+                {@const IconComponent = steps[currentStep].icon}
+                <IconComponent class="w-10 h-10 text-primary" />
+            {/if}
         </div>
 
         <div class="text-center space-y-3 max-w-sm">

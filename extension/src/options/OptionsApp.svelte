@@ -2,7 +2,7 @@
     import { onMount } from "svelte";
     import { wordsStore } from "$lib/stores/words";
     import { authStore } from "$lib/stores/auth";
-    import { deleteWord, exportWords } from "$lib/utils/wordDB";
+    import { deleteWord, getAllWords } from "$lib/utils/wordDB";
     import { Trash2, Download, RefreshCw, Search } from "@lucide/svelte";
 
     let searchQuery = $state("");
@@ -59,7 +59,7 @@
 
     async function handleExport() {
         try {
-            const words = await exportWords();
+            const words = await getAllWords();
             const dataStr = JSON.stringify(words, null, 2);
             const dataBlob = new Blob([dataStr], { type: "application/json" });
             const url = URL.createObjectURL(dataBlob);
