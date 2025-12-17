@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { addWord } from "$lib/utils/wordDB";
+  import { addWord, addRequestedWord } from "$lib/utils/wordDB";
   import { fetchMeaning } from "$lib/utils/api";
   import { authStore } from "$lib/stores/auth";
   import { recordsStore } from "$lib/stores/records";
@@ -11,11 +11,12 @@
     word: string;
     x: number;
     y: number;
+    arrowX?: number;
+    placement?: "top" | "bottom";
     onClose: () => void;
   }
 
-  let { word, x, y, onClose }: Props = $props();
-
+  let { word, x, y, arrowX, placement, onClose }: Props = $props();
   let meaning = $state<string | null>(null);
   let phonetics = $state<string | null>(null);
   let audioUrl = $state<string | null>(null);
@@ -117,7 +118,7 @@
     {#if isLoading}
       <div class="overlay-loading">
         <Loader class="spinner" />
-        <span>Loading…</span>
+        <span class="">Loading…</span>
       </div>
     {:else if error}
       <div class="overlay-error">{error}</div>
@@ -170,13 +171,14 @@
         </button>
       </div>
     {/if}
+    <div class="arrow {placement}" style="left: {arrowX}%"></div>
   </div>
 </div>
 
 <style>
   :root {
     --highlight-extension-radius: 12px;
-    --highlight-extension-card: oklch(1 0 0 / 90%);
+    --highlight-extension-card: oklch(1 0 0 / 96%);
     --highlight-extension-border: oklch(0.922 0 0);
     --highlight-extension-hover: oklch(0.97 0 0);
     --highlight-extension-foreground: oklch(0.145 0 0);
@@ -188,7 +190,7 @@
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --highlight-extension-card: oklch(0.205 0 0 / 90%);
+      --highlight-extension-card: oklch(0.205 0 0 / 96%);
       --highlight-extension-border: oklch(1 0 0 / 10%);
       --highlight-extension-hover: oklch(0.269 0 0);
       --highlight-extension-foreground: oklch(0.985 0 0);
@@ -200,21 +202,25 @@
   }
 
   .overlay-popup {
-    position: fixed;
-    transform: translate(-50%, calc(-100% - 16px));
+    position: absolute;
+    z-index: 2147483647;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
     pointer-events: auto;
-    z-index: 9999;
-    animation: slideIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    will-change: transform, opacity;
+    transition:
+      transform 120ms ease-out,
+      opacity 120ms ease-out;
+    animation: slideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   @keyframes slideIn {
     from {
       opacity: 0;
-      transform: translate(-50%, calc(-100% - 32px)) scale(0.9);
+      transform: translateY(5px);
     }
     to {
       opacity: 1;
-      transform: translate(-50%, calc(-100% - 16px)) scale(1);
+      transform: translateY(0);
     }
   }
 
@@ -230,7 +236,7 @@
     position: relative;
     border: 1px solid var(--highlight-extension-border);
     backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(8px);
   }
 
   .overlay-close {
@@ -276,7 +282,7 @@
 
   .overlay-phonetics {
     font-size: 14px;
-    color: var(--highlight-extension-muted);
+    color: var(--highlight-extension-primary);
     font-style: italic;
   }
 
@@ -285,13 +291,14 @@
     align-items: center;
     gap: 10px;
     font-size: 14px;
-    color: var(--highlight-extension-muted);
+    color: var(--highlight-extension-foreground);
     padding: 12px 0;
   }
 
   .spinner {
     width: 16px;
     height: 16px;
+    margin-right: 4px;
     color: var(--highlight-extension-foreground);
     animation: spin 1.5s linear infinite;
   }
@@ -422,5 +429,25 @@
 
   .filled {
     fill: currentColor;
+  }
+
+  .arrow {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: var(--highlight-extension-card);
+    transform: translateX(-50%) rotate(45deg);
+    border: 1px solid var(--highlight-extension-border);
+  }
+  .arrow.top {
+    bottom: -6px;
+    border-top: none;
+    border-left: none;
+  }
+
+  .arrow.bottom {
+    top: -6px;
+    border-bottom: none;
+    border-right: none;
   }
 </style>

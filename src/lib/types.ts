@@ -9,6 +9,12 @@ export interface SavedWord {
   synced: boolean;
 }
 
+export interface RequestedWord {
+  word: string;
+  requestedAt: string;
+  responseType: "success" | "failed";
+}
+
 export interface AuthData {
   authToken: string | null;
   userId: string | null;

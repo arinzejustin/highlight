@@ -55,34 +55,33 @@ function createOverlayContainer(): HTMLDivElement {
   return container;
 }
 
-function calculateOverlayPosition(rect: DOMRect): { x: number; y: number } {
-  const margin = 10;
-  const overlayHeight = 200;
-  const overlayWidth = 400;
+function calculateOverlayPosition(rect: DOMRect) {
+  const padding = 12;
+  const overlayWidth = 320;
+  const overlayHeight = 150;
 
-  let x = rect.left + window.scrollX;
-  let y = rect.top + window.scrollY - overlayHeight - margin;
+  const wordCenter = rect.left + window.scrollX + rect.width / 2;
 
-  if (x + overlayWidth > window.innerWidth + window.scrollX) {
-    x = window.innerWidth + window.scrollX - overlayWidth - margin;
+  let x = wordCenter - overlayWidth / 2;
+
+  const minX = window.scrollX + padding;
+  const maxX = window.scrollX + window.innerWidth - overlayWidth - padding;
+
+  if (x < minX) x = minX;
+  if (x > maxX) x = maxX;
+
+  const relativeArrowX = wordCenter - x;
+  const arrowXPercent = (relativeArrowX / overlayWidth) * 100;
+
+  let y = rect.top + window.scrollY - overlayHeight - padding;
+  let side = "top" as "top" | "bottom";
+
+  if (rect.top < overlayHeight + padding) {
+    y = rect.bottom + window.scrollY + padding;
+    side = "bottom";
   }
 
-  if (x < window.scrollX + margin) {
-    x = window.scrollX + margin;
-  }
-
-  if (y < window.scrollY + margin) {
-    y = rect.bottom + window.scrollY + margin;
-  }
-
-  if (y + overlayHeight > window.innerHeight + window.scrollY) {
-    y = rect.top + window.scrollY - overlayHeight - margin;
-    if (y < window.scrollY + margin) {
-      y = window.scrollY + margin;
-    }
-  }
-
-  return { x, y };
+  return { x, y, arrowX: arrowXPercent, side };
 }
 
 function isElementInViewport(rect: DOMRect): boolean {
@@ -109,6 +108,8 @@ function showOverlay(word: string, rect: DOMRect) {
       word,
       x: position.x,
       y: position.y,
+      arrowX: position.arrowX,
+      placement: position.side,
       onClose: () => {
         closedWord = word;
         hideOverlay();

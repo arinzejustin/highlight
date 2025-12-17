@@ -1,74 +1,87 @@
 import { getLocalStorage, setLocalStorage } from "$lib/utils/chromeWrap";
-import type { SavedWord } from "$lib/types";
+import type { SavedWord, RequestedWord } from "$lib/types";
 
-const WORDS_STORAGE_KEY = "highlight_words";
+const KEYS = {
+  SAVED: "saved_words",
+  REQUESTED: "requested_words"
+} as const;
 
-async function getWordsFromStorage(): Promise<SavedWord[]> {
-  const data = await getLocalStorage<{ [WORDS_STORAGE_KEY]?: SavedWord[] }>([WORDS_STORAGE_KEY]);
-  return data[WORDS_STORAGE_KEY] || [];
+async function storageGet<T>(key: string): Promise<T[]> {
+  const data = await getLocalStorage<{ [key: string]: T[] }>([key]);
+  return data[key] || [];
 }
 
-async function saveWordsToStorage(words: SavedWord[]): Promise<void> {
-  await setLocalStorage({ [WORDS_STORAGE_KEY]: words });
+async function storageSet<T>(key: string, value: T[]): Promise<void> {
+  await setLocalStorage({ [key]: value });
 }
 
-export async function addWord(word: Omit<SavedWord, "id">): Promise<string> {
-  const words = await getWordsFromStorage();
-  const id = `word_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+export const addWord = async (word: Omit<SavedWord, "id">): Promise<string> => {
+  const words = await storageGet<SavedWord>(KEYS.SAVED);
+  const id = crypto.randomUUID();
   const wordWithId: SavedWord = { ...word, id };
-  words.push(wordWithId);
-  await saveWordsToStorage(words);
+  await storageSet(KEYS.SAVED, [...words, wordWithId]);
   return id;
-}
+};
 
-export async function getAllWords(): Promise<SavedWord[]> {
-  const words = await getWordsFromStorage();
+export const getAllWords = async (): Promise<SavedWord[]> => {
+  const words = await storageGet<SavedWord>(KEYS.SAVED);
   return words.sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
-}
+};
 
-export async function getWordById(id: string): Promise<SavedWord | undefined> {
-  const words = await getWordsFromStorage();
-  return words.find(word => word.id === id);
-}
+export const getWordById = async (id: string): Promise<SavedWord | undefined> => {
+  const words = await storageGet<SavedWord>(KEYS.SAVED);
+  return words.find(w => w.id === id);
+};
 
-export async function deleteWord(id: string): Promise<void> {
-  const words = await getWordsFromStorage();
-  const filteredWords = words.filter(word => word.id !== id);
-  await saveWordsToStorage(filteredWords);
-}
+export const deleteWord = async (id: string): Promise<void> => {
+  const words = await storageGet<SavedWord>(KEYS.SAVED);
+  await storageSet(KEYS.SAVED, words.filter(w => w.id !== id));
+};
 
-export async function updateWord(
-  id: string,
-  updates: Partial<SavedWord>,
-): Promise<void> {
-  const words = await getWordsFromStorage();
-  const index = words.findIndex(word => word.id === id);
+export const updateWord = async (id: string, updates: Partial<SavedWord>): Promise<void> => {
+  const words = await storageGet<SavedWord>(KEYS.SAVED);
+  const index = words.findIndex(w => w.id === id);
   if (index !== -1) {
-    words[index] = { ...words[index], ...updates };
-    await saveWordsToStorage(words);
+    const updatedWords = [...words];
+    updatedWords[index] = { ...updatedWords[index], ...updates };
+    await storageSet(KEYS.SAVED, updatedWords);
   }
-}
+};
 
-export async function markWordAsSynced(id: string): Promise<void> {
+export const markWordAsSynced = async (id: string): Promise<void> => {
   await updateWord(id, { synced: true });
-}
+};
 
-export async function getUnsyncedWords(): Promise<SavedWord[]> {
-  const words = await getWordsFromStorage();
-  return words.filter(word => !word.synced);
-}
+export const getUnsyncedWords = async (): Promise<SavedWord[]> => {
+  const words = await storageGet<SavedWord>(KEYS.SAVED);
+  return words.filter(w => !w.synced);
+};
 
-export async function exportWords(): Promise<SavedWord[]> {
-  return getAllWords();
-}
-
-export async function clearAllWords(): Promise<void> {
-  await setLocalStorage({ [WORDS_STORAGE_KEY]: [] });
-}
-
-export async function getUnsyncLength(): Promise<number> {
+export const getUnsyncLength = async (): Promise<number> => {
   const words = await getUnsyncedWords();
-  return words.length || 0;
-}
+  return words.length;
+};
+
+export const clearAllWords = async (): Promise<void> => {
+  await storageSet(KEYS.SAVED, []);
+};
+
+export const addRequestedWord = async (word: string, responseType: RequestedWord["responseType"]): Promise<void> => {
+  const requested = await storageGet<RequestedWord>(KEYS.REQUESTED);
+  const newEntry: RequestedWord = {
+    word,
+    requestedAt: new Date().toISOString(),
+    responseType
+  };
+  await storageSet(KEYS.REQUESTED, [...requested, newEntry]);
+};
+
+export const getRequestedWords = async (): Promise<RequestedWord[]> => {
+  return storageGet<RequestedWord>(KEYS.REQUESTED);
+};
+
+export const clearRequestedWords = async (): Promise<void> => {
+  await storageSet(KEYS.REQUESTED, []);
+};

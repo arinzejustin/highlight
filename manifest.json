@@ -4,7 +4,6 @@
   "author": {
     "email": "codewitharinzejustin@gmail.com"
   },
-  "default_locale": "en",
   "homepage_url": "https://yourwebsite.com",
   "version": "1.0.0",
   "description": "A smart browser extension that lets you highlight any word on any webpage to instantly see its meaning, save it for later, and sync your vocabulary across devices.",
