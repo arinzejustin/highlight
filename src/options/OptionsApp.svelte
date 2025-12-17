@@ -2,7 +2,7 @@
     import { onMount } from "svelte";
     import { wordsStore } from "$lib/stores/words";
     import { authStore } from "$lib/stores/auth";
-    import { deleteWord, exportWords } from "$lib/utils/idb";
+    import { deleteWord, exportWords } from "$lib/utils/wordDB";
     import { Trash2, Download, RefreshCw, Search } from "@lucide/svelte";
 
     let searchQuery = $state("");

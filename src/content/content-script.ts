@@ -10,11 +10,13 @@ let selectionRect: DOMRect | null = null;
 let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let user: User | null = null;
+let closedWord = "";
 
 async function loadUserData() {
   try {
-    const authData = await getChromeStorage<{ user?: User }>(["user"]);
-    user = authData.user || null;
+    const userData = await getChromeStorage<{ user?: User }>(["user"]);
+    user = userData.user || null;
+    handleTextSelection();
   } catch (error) {
     console.error("[Highlight Extension] Failed to load user data:", error);
     user = null;
@@ -24,10 +26,16 @@ async function loadUserData() {
 chrome.runtime.onMessage.addListener((message) => {
   if (message.type === "USER_UPDATED") {
     user = message.user || null;
+    closedWord = "";
+    handleTextSelection();
   }
 
   if (message.type === "Extension deactivated" || message.type === "Extension activated") {
-    user!.extensionMode! = message.isActivated;
+    if (user) {
+      user.extensionMode = message.isActivated;
+    }
+    closedWord = "";
+    handleTextSelection();
   }
 });
 
@@ -47,6 +55,45 @@ function createOverlayContainer(): HTMLDivElement {
   return container;
 }
 
+function calculateOverlayPosition(rect: DOMRect): { x: number; y: number } {
+  const margin = 10;
+  const overlayHeight = 200;
+  const overlayWidth = 400;
+
+  let x = rect.left + window.scrollX;
+  let y = rect.top + window.scrollY - overlayHeight - margin;
+
+  if (x + overlayWidth > window.innerWidth + window.scrollX) {
+    x = window.innerWidth + window.scrollX - overlayWidth - margin;
+  }
+
+  if (x < window.scrollX + margin) {
+    x = window.scrollX + margin;
+  }
+
+  if (y < window.scrollY + margin) {
+    y = rect.bottom + window.scrollY + margin;
+  }
+
+  if (y + overlayHeight > window.innerHeight + window.scrollY) {
+    y = rect.top + window.scrollY - overlayHeight - margin;
+    if (y < window.scrollY + margin) {
+      y = window.scrollY + margin;
+    }
+  }
+
+  return { x, y };
+}
+
+function isElementInViewport(rect: DOMRect): boolean {
+  return (
+    rect.top >= 0 &&
+    rect.left >= 0 &&
+    rect.bottom <= window.innerHeight &&
+    rect.right <= window.innerWidth
+  );
+}
+
 function showOverlay(word: string, rect: DOMRect) {
   hideOverlay();
 
@@ -54,13 +101,18 @@ function showOverlay(word: string, rect: DOMRect) {
     overlayContainer = createOverlayContainer();
   }
 
+  const position = calculateOverlayPosition(rect);
+
   overlayComponent = mount(Overlay, {
     target: overlayContainer,
     props: {
       word,
-      x: rect.left + window.scrollX,
-      y: rect.top + window.scrollY - 10,
-      onClose: hideOverlay,
+      x: position.x,
+      y: position.y,
+      onClose: () => {
+        closedWord = word;
+        hideOverlay();
+      },
     },
   });
 }
@@ -108,6 +160,10 @@ function handleTextSelection() {
     return;
   }
 
+  if (word === closedWord) {
+    return;
+  }
+
   const range = selection.getRangeAt(0);
   const rect = range.getBoundingClientRect();
 
@@ -123,7 +179,8 @@ function handleTextSelection() {
     const currentSel = window.getSelection();
     if (
       currentSel?.toString().trim() === word &&
-      selectedText === word
+      selectedText === word &&
+      word !== closedWord
     ) {
       showOverlay(word, rect);
     }
@@ -136,6 +193,7 @@ document.addEventListener("selectionchange", () => {
   const selection = window.getSelection();
   if (selection && selection.isCollapsed) {
     hideOverlay();
+    closedWord = "";
   }
 });
 
@@ -147,6 +205,7 @@ document.addEventListener("mousedown", (e) => {
       return;
     }
     hideOverlay();
+    closedWord = "";
   }
 });
 
@@ -162,16 +221,24 @@ window.addEventListener("scroll", () => {
         const range = selection.getRangeAt(0);
         const newRect = range.getBoundingClientRect();
 
-        // Unmount and remount with updated props
+        if (!isElementInViewport(newRect)) {
+          hideOverlay();
+          return;
+        }
+
         if (overlayComponent && overlayContainer) {
           unmount(overlayComponent);
+          const position = calculateOverlayPosition(newRect);
           overlayComponent = mount(Overlay, {
             target: overlayContainer,
             props: {
               word: selectedText,
-              x: newRect.left + window.scrollX,
-              y: newRect.top + window.scrollY - 10,
-              onClose: hideOverlay,
+              x: position.x,
+              y: position.y,
+              onClose: () => {
+                closedWord = selectedText;
+                hideOverlay();
+              },
             },
           });
         }

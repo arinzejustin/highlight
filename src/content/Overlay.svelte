@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { addWord } from "$lib/utils/idb";
+  import { addWord } from "$lib/utils/wordDB";
   import { fetchMeaning } from "$lib/utils/api";
   import { authStore } from "$lib/stores/auth";
   import { recordsStore } from "$lib/stores/records";
@@ -176,7 +176,7 @@
 <style>
   :root {
     --highlight-extension-radius: 12px;
-    --highlight-extension-card: oklch(1 0 0 / 79%);
+    --highlight-extension-card: oklch(1 0 0 / 90%);
     --highlight-extension-border: oklch(0.922 0 0);
     --highlight-extension-hover: oklch(0.97 0 0);
     --highlight-extension-foreground: oklch(0.145 0 0);
@@ -188,7 +188,7 @@
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --highlight-extension-card: oklch(0.205 0 0 / 79%);
+      --highlight-extension-card: oklch(0.205 0 0 / 90%);
       --highlight-extension-border: oklch(1 0 0 / 10%);
       --highlight-extension-hover: oklch(0.269 0 0);
       --highlight-extension-foreground: oklch(0.985 0 0);
@@ -196,15 +196,6 @@
       --highlight-extension-primary: oklch(0.922 0 0);
       --highlight-extension-success: #34d399;
       --highlight-extension-error: oklch(0.704 0.191 22.216);
-    }
-  }
-
-  @keyframes fadeInBackdrop {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
     }
   }
 

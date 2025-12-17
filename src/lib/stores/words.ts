@@ -1,5 +1,5 @@
 import { writable } from "svelte/store";
-import { getAllWords, deleteWord, getUnsyncLength } from "$lib/utils/idb";
+import { getAllWords, deleteWord, getUnsyncLength } from "$lib/utils/wordDB";
 import { Notification } from "$lib/utils/chromeWrap";
 import type { SavedWord } from "$lib/types";
 

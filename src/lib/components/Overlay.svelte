@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { addWord } from "$lib/utils/idb";
+  import { addWord } from "$lib/utils/wordDB";
   import { fetchMeaning } from "$lib/utils/api";
   import { authStore } from "$lib/stores/auth";
   import { recordsStore } from "$lib/stores/records";

@@ -1,5 +1,5 @@
 import { syncWords, getUserById, syncUser, InitDeviceId } from "$lib/utils/api";
-import { getAllWords, markWordAsSynced } from "$lib/utils/idb";
+import { getAllWords, markWordAsSynced } from "$lib/utils/wordDB";
 import {
   getChromeStorage,
   setChromeStorage,
