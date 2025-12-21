@@ -1,11 +1,11 @@
 import type { SavedWord, User, AuthData, DeviceInfo, WordResponse } from "$lib/types";
 
-const API_BASE_URL = "http://localhost:4000";
+const API_BASE_URL = "http://localhost:3000";
 
 export async function fetchMeaning(word: string, authToken: string | null, deviceId?: string): Promise<WordResponse | string> {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/meaning`, {
+      `${API_BASE_URL}/api/meaning`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -73,7 +73,7 @@ export async function syncWords(
   token: string,
 ): Promise<{ success: boolean }> {
   try {
-    const response = await fetch(`${API_BASE_URL}/words/sync`, {
+    const response = await fetch(`${API_BASE_URL}/api/words/sync`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -95,7 +95,7 @@ export async function syncWords(
 
 export async function fetchUserWords(token: string): Promise<SavedWord[]> {
   try {
-    const response = await fetch(`${API_BASE_URL}/words`, {
+    const response = await fetch(`${API_BASE_URL}/api/words`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -115,7 +115,7 @@ export async function fetchUserWords(token: string): Promise<SavedWord[]> {
 
 export async function getUserById(userId: string, token: string): Promise<User | null> {
   try {
-    const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -142,7 +142,7 @@ export async function syncUser(
     }
 
     const response = await fetch(
-      `${API_BASE_URL}/users/${authData.userId}`,
+      `${API_BASE_URL}/api/users/${authData.userId}`,
       {
         method: "PUT",
         headers: {
@@ -193,7 +193,7 @@ export async function syncUser(
 
 export async function InitDeviceId(deviceInfo: Omit<DeviceInfo, "deviceId">): Promise<string> {
   try {
-    const response = await fetch(`${API_BASE_URL}/devices/init`, {
+    const response = await fetch(`${API_BASE_URL}/api/devices/init`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

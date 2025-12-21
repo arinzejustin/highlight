@@ -47,7 +47,7 @@ export interface User {
   username: string;
   createdAt: string;
   status: "active" | "suspended" | "deleted";
-  allowedList?: string[],
+  disallowedList?: string[],
   extensionMode?: boolean;
   records?: {
     requestCount: number;

@@ -132,12 +132,12 @@ function handleTextSelection() {
     return;
   }
 
-  if (user?.allowedList?.length) {
+  if (user?.disallowedList?.length) {
     const hostname = window.location.hostname;
-    const isAllowed = user.allowedList.some((domain: string) =>
+    const isDisallowed = user.disallowedList.some((domain: string) =>
       hostname === domain || hostname.endsWith(`.${domain}`)
     );
-    if (!isAllowed) {
+    if (isDisallowed) {
       hideOverlay();
       return;
     }
@@ -157,7 +157,7 @@ function handleTextSelection() {
   }
 
   const word = words[0];
-  
+
   const isValidWord = /^[a-zA-Z']+$/.test(word);
 
   if (!isValidWord) {

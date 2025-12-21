@@ -1,7 +1,14 @@
 <script lang="ts">
     import { onMount } from "svelte";
-    import { ListFilterPlus, OctagonAlert, Info } from "@lucide/svelte";
+    import {
+        ListFilterPlus,
+        OctagonAlert,
+        Info,
+        Plus,
+        BadgeMinus,
+    } from "@lucide/svelte";
     import { activationStore } from "$lib/stores/activation";
+    import { disallowedStore } from "$lib/stores/disallowed";
     import { recordsStore } from "$lib/stores/records";
     import * as Tooltip from "$lib/components/ui/tooltip/index.js";
     import type { User } from "$lib/types";
@@ -120,11 +127,11 @@
                     class="flex items-center justify-between align-middle border-b p-2"
                 >
                     <p class="text-base font-medium">Name</p>
-                    <p class="text-muted-foreground">John Doe</p>
+                    <p class="text-muted-foreground">{user.username}</p>
                 </div>
                 <div class="flex items-center justify-between align-middle p-2">
                     <p class="text-base font-medium">Email</p>
-                    <p class="text-muted-foreground">code@example.com</p>
+                    <p class="text-muted-foreground">{user.email}</p>
                 </div>
             </div>
             <p class="text-base text-muted-foreground">Plan</p>
@@ -133,7 +140,7 @@
                     class="flex items-center justify-between align-middle border-b p-2"
                 >
                     {#if user.plan === "free"}
-                        <p class="text-base font-medium">50 Requests/Month</p>
+                        <p class="text-base font-medium">50 Requests/21 Days</p>
                         <a
                             href="https://highlight.pro/upgrade"
                             target="_blank"
@@ -172,7 +179,7 @@
         {/if}
     {:else if allowList}
         <div class="relative my-3 pb-2 mt-1">
-            {#if !user}
+            {#if !user || user?.plan === "free"}
                 <div
                     class="rounded-lg shadow-sm hover:shadow-md border border-yellow-400 bg-yellow-200 py-1 px-2"
                 >
@@ -189,6 +196,83 @@
                     </p>
                 </div>
             {/if}
+            <div class="mt-5 mb-2">
+                <p class="text-primary text-lg my-4 mb-3">
+                    Add To Disallowed list
+                </p>
+                <div
+                    class="bg-card flex justify-between flex-row rounded-lg shadow-md border p-4 py-3 hover:bg-muted-foreground/5 transition cursor-pointer {user &&
+                    user.plan !== 'free'
+                        ? ''
+                        : 'opacity-50 pointer-events-none'}"
+                >
+                    <p>{hostname}</p>
+                    <button
+                        aria-label="Add Site"
+                        onclick={async () => {
+                            if (!hostname || !user || user.plan === "free")
+                                return;
+                            if (
+                                user.disallowedList.includes(hostname) &&
+                                disallowedStore.list().includes(hostname)
+                            )
+                                return;
+
+                            const updatedList = [
+                                ...user.disallowedList,
+                                hostname,
+                            ];
+                            user = {
+                                ...user,
+                                disallowedList: updatedList,
+                            };
+                            await disallowedStore.addSite(hostname);
+                        }}
+                        class="flex items-center justify-center text-primary font-medium"
+                    >
+                        <Plus class="size-5" />
+                    </button>
+                </div>
+            </div>
+            <div class="mt-5">
+                <p class="text-primary-forground text-lg my-4">
+                    Disallowed Sites
+                </p>
+                {#if user && user.disallowedList.length > 0}
+                    <div class="space-y-2 my-2 max-h-60 overflow-y-auto pr-2">
+                        {#each user.disallowedList as site}
+                            <div
+                                class="flex items-center justify-between border rounded-lg p-3 bg-card hover:shadow-md transition-all duration-300"
+                            >
+                                <p class="text-base break-all">{site}</p>
+                                <button
+                                    aria-label="Remove Site"
+                                    onclick={async () => {
+                                        const updatedList =
+                                            user.disallowedList.filter(
+                                                (s: string) => s !== site,
+                                            );
+                                        user = {
+                                            ...user,
+                                            disallowedList: updatedList,
+                                        };
+                                        await disallowedStore.removeSite(site);
+                                    }}
+                                    class="text-destructive hover:text-red-600 cursor-pointer"
+                                >
+                                    <BadgeMinus class="size-5" />
+                                </button>
+                            </div>
+                        {/each}
+                    </div>
+                {:else}
+                    <div class="my-4">
+                        <p class="text-base text-center text-primary/70 py-2">
+                            There is no disallowed sites.
+                        </p>
+                    </div>
+                {/if}
+            </div>
         </div>
     {:else}
         <div class="relative">
@@ -297,8 +381,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Successful Requests -->
                     <div
                         class="border rounded-lg min-h-24 p-4 card cursor-pointer hover:shadow-md transition-all duration-700"
                     >

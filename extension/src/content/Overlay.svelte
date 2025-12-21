@@ -221,7 +221,7 @@
       left 0.1s linear,
       top 0.1s linear;
     transform: scale(1);
-    animation: slideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: highlightExtensionSlideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .overlay-popup.hidden {
@@ -230,7 +230,7 @@
     transform: scale(0.95);
   }
 
-  @keyframes slideIn {
+  @keyframes highlightExtensionSlideIn {
     from {
       opacity: 0;
       transform: translateY(5px);
@@ -316,14 +316,15 @@
     width: 14px;
     height: 14px;
     color: var(--highlight-extension-foreground);
-    animation: spin 0.5s linear infinite;
+    animation: highlightExtensionSpin 0.5s linear infinite;
+    will-change: transform;
   }
 
-  @keyframes spin {
-    from {
+  @keyframes highlightExtensionSpin {
+    0% {
       transform: rotate(0deg);
     }
-    to {
+    100% {
       transform: rotate(360deg);
     }
   }

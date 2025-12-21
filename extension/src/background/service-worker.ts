@@ -69,7 +69,7 @@ const USER_FIELDS_TO_MONITOR = [
   "email",
   "username",
   "records",
-  "allowedList",
+  "disallowedList",
   "extensionMode",
 ] as const satisfies readonly (keyof User)[];
 

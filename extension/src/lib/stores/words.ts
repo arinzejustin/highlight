@@ -17,7 +17,6 @@ function createWordsStore() {
   return {
     subscribe,
 
-    // Load all words from IndexedDB
     async loadWords() {
       const words = await getAllWords();
       set(words);
